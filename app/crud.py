@@ -260,17 +260,39 @@ def get_financial_summary(db: Session) -> Dict[str, Any]:
     }
 
 def get_account_transactions(db: Session, account_name: str, limit: int = 100) -> List[Dict[str, Any]]:
-    """Get transactions for a specific account"""
+    """Get transactions for a specific account including opening balance"""
     banking_noun = get_noun_by_name(db, "Banking")
     if not banking_noun:
         return []
     
     transactions = []
-    # Look for the specific account's transaction attribute
-    account_attr = get_attribute_by_name_and_noun(db, banking_noun.id, f"{account_name}_Transaction")
     
+    # Get opening balance transaction
+    account_attr = get_attribute_by_name_and_noun(db, banking_noun.id, account_name)
     if account_attr:
-        transaction_values = get_values_by_attribute(db, account_attr.id)
+        balance_value = get_value_by_name_and_attribute(db, account_attr.id, "Balance")
+        if balance_value:
+            # Get the earliest balance entry as opening balance
+            earliest_balance = db.query(models.Data).filter(
+                models.Data.value_id == balance_value.id
+            ).order_by(models.Data.date_recorded.asc()).first()
+            
+            if earliest_balance:
+                transactions.append({
+                    "id": f"balance_{earliest_balance.id}",
+                    "account": account_name,
+                    "category": "Opening Balance",
+                    "amount": float(earliest_balance.data_value),
+                    "date": earliest_balance.date_recorded,
+                    "notes": earliest_balance.notes or "Initial account balance",
+                    "type": "balance"
+                })
+    
+    # Look for the specific account's transaction attribute
+    account_transaction_attr = get_attribute_by_name_and_noun(db, banking_noun.id, f"{account_name}_Transaction")
+    
+    if account_transaction_attr:
+        transaction_values = get_values_by_attribute(db, account_transaction_attr.id)
         for val in transaction_values:
             data_entries = get_data_by_value(db, val.id, limit)
             for data in data_entries:
@@ -280,7 +302,8 @@ def get_account_transactions(db: Session, account_name: str, limit: int = 100) -
                     "category": val.name,
                     "amount": float(data.data_value),
                     "date": data.date_recorded,
-                    "notes": data.notes
+                    "notes": data.notes,
+                    "type": "transaction"
                 })
     
     # Sort by date descending
@@ -288,7 +311,7 @@ def get_account_transactions(db: Session, account_name: str, limit: int = 100) -
     return transactions[:limit]
 
 def get_account_balance_history(db: Session, account_name: str) -> List[Dict[str, Any]]:
-    """Get balance history for a specific account"""
+    """Get balance history for a specific account using stored balance snapshots"""
     banking_noun = get_noun_by_name(db, "Banking")
     if not banking_noun:
         return []
@@ -299,7 +322,11 @@ def get_account_balance_history(db: Session, account_name: str) -> List[Dict[str
     if account_attr:
         balance_value = get_value_by_name_and_attribute(db, account_attr.id, "Balance")
         if balance_value:
-            data_entries = get_data_by_value(db, balance_value.id, limit=50)
+            # Get all balance data entries
+            data_entries = db.query(models.Data).filter(
+                models.Data.value_id == balance_value.id
+            ).order_by(models.Data.date_recorded.asc()).all()
+            
             for data in data_entries:
                 balance_history.append({
                     "date": data.date_recorded,
@@ -307,9 +334,78 @@ def get_account_balance_history(db: Session, account_name: str) -> List[Dict[str
                     "notes": data.notes
                 })
     
-    # Sort by date ascending for chart
-    balance_history.sort(key=lambda x: x["date"])
     return balance_history
+
+def calculate_and_store_daily_balance(db: Session, account_name: str, target_date: datetime = None) -> Dict[str, Any]:
+    """Calculate and store the daily balance for an account based on transactions"""
+    if target_date is None:
+        target_date = datetime.now()
+    
+        # Get all transactions up to the target date
+    transactions = get_account_transactions(db, account_name, limit=10000)
+    
+    # Filter transactions up to the target date
+    target_date_start = target_date.replace(hour=0, minute=0, second=0, microsecond=0)
+    target_date_end = target_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+    
+    # Convert transaction dates to timezone-naive for comparison
+    relevant_transactions = []
+    for t in transactions:
+        # Convert to timezone-naive datetime for comparison
+        transaction_date = t["date"]
+        if hasattr(transaction_date, 'tzinfo') and transaction_date.tzinfo is not None:
+            transaction_date = transaction_date.replace(tzinfo=None)
+        
+        if transaction_date <= target_date_end:
+            relevant_transactions.append(t)
+    
+    # Calculate running balance
+    running_balance = 0.0
+    
+    # Get initial balance from the earliest balance update
+    banking_noun = get_noun_by_name(db, "Banking")
+    if banking_noun:
+        account_attr = get_attribute_by_name_and_noun(db, banking_noun.id, account_name)
+        if account_attr:
+            balance_value = get_value_by_name_and_attribute(db, account_attr.id, "Balance")
+            if balance_value:
+                earliest_balance = db.query(models.Data).filter(
+                    models.Data.value_id == balance_value.id
+                ).order_by(models.Data.date_recorded.asc()).first()
+                
+                if earliest_balance:
+                    running_balance = float(earliest_balance.data_value)
+    
+    # Add all transaction amounts
+    for transaction in relevant_transactions:
+        running_balance += transaction["amount"]
+    
+    # If no initial balance was found, start from 0
+    if running_balance == 0.0 and relevant_transactions:
+        # Start from 0 and add all transactions
+        running_balance = sum(t["amount"] for t in relevant_transactions)
+    
+    # Store the calculated balance
+    balance_notes = f"Calculated balance for {target_date.strftime('%Y-%m-%d')} based on {len(relevant_transactions)} transactions"
+    
+    # Use the existing track_data function to store the balance
+    track_data(
+        db=db,
+        noun_name="Banking",
+        attribute_name=account_name,
+        value_name="Balance",
+        data_value=str(running_balance),
+        data_type="number",
+        notes=balance_notes
+    )
+    
+    return {
+        "account_name": account_name,
+        "date": target_date,
+        "calculated_balance": running_balance,
+        "transactions_count": len(relevant_transactions),
+        "notes": balance_notes
+    }
 
 def get_account_summary(db: Session, account_name: str) -> Dict[str, Any]:
     """Get summary statistics for a specific account"""
@@ -325,7 +421,7 @@ def get_account_summary(db: Session, account_name: str) -> Dict[str, Any]:
             "average_transaction": 0,
             "largest_transaction": 0,
             "most_common_category": None,
-            "balance_changes": 0
+            "balance_changes": len(balance_history)
         }
     
     # Calculate transaction statistics
@@ -346,7 +442,7 @@ def get_account_summary(db: Session, account_name: str) -> Dict[str, Any]:
     
     most_common_category = max(category_counts.items(), key=lambda x: x[1])[0] if category_counts else None
     
-    # Count balance changes
+    # Count balance changes (including initial balance and transactions)
     balance_changes = len(balance_history)
     
     return {

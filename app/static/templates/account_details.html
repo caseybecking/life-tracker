@@ -127,6 +127,9 @@
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0"><i class="fas fa-list me-2"></i>Transaction History</h5>
                 <div>
+                    <button class="btn btn-outline-success btn-sm me-2" onclick="calculateBalance()" title="Calculate Balance from Transactions">
+                        <i class="fas fa-calculator"></i>
+                    </button>
                     <button class="btn btn-outline-primary btn-sm" onclick="refreshAccountData()">
                         <i class="fas fa-sync-alt"></i>
                     </button>
@@ -293,9 +296,15 @@ function updateTransactionsTable(transactions) {
         const amountClass = transaction.amount >= 0 ? 'text-success' : 'text-danger';
         const amountSign = transaction.amount >= 0 ? '+' : '';
         
+        // Special styling for opening balance
+        const isOpeningBalance = transaction.category === 'Opening Balance';
+        const rowClass = isOpeningBalance ? 'table-info' : '';
+        const categoryBadge = isOpeningBalance ? 'bg-info' : 'bg-secondary';
+        
+        row.className = rowClass;
         row.innerHTML = `
             <td>${new Date(transaction.date).toLocaleDateString()}</td>
-            <td><span class="badge bg-secondary">${transaction.category}</span></td>
+            <td><span class="badge ${categoryBadge}">${transaction.category}</span></td>
             <td>${transaction.description || '-'}</td>
             <td class="${amountClass} fw-bold">${amountSign}$${Math.abs(transaction.amount).toFixed(2)}</td>
             <td>${transaction.notes || '-'}</td>
@@ -311,6 +320,27 @@ async function refreshAccountData() {
     } catch (error) {
         console.error('Error refreshing account data:', error);
         showAlert('Error refreshing account data', 'danger');
+    }
+}
+
+async function calculateBalance() {
+    try {
+        const response = await fetch(`/finance/accounts/${encodeURIComponent(accountName)}/calculate-balance`, {
+            method: 'POST'
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            showAlert(`Balance calculated successfully! New balance: $${result.data.calculated_balance.toFixed(2)}`, 'success');
+            
+            // Refresh the data to show the updated chart
+            await loadAccountDetails();
+        } else {
+            throw new Error('Failed to calculate balance');
+        }
+    } catch (error) {
+        console.error('Error calculating balance:', error);
+        showAlert('Error calculating balance', 'danger');
     }
 }
 
