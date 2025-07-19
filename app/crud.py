@@ -239,6 +239,7 @@ def get_transactions(db: Session, limit: int = 100) -> List[Dict[str, Any]]:
                         "amount": float(data.data_value),
                         "date": data.date_recorded,
                         "updated_at": data.updated_at,
+                        "description": data.notes,  # Map notes to description for frontend compatibility
                         "notes": data.notes,
                         "type": "transaction"
                     })
@@ -521,6 +522,8 @@ def get_account_transactions(db: Session, account_name: str, limit: int = 100) -
                     "category": val.name,
                     "amount": float(data.data_value),
                     "date": data.date_recorded,
+                    "updated_at": data.updated_at,
+                    "description": data.notes,  # Map notes to description for frontend compatibility
                     "notes": data.notes,
                     "type": "transaction"
                 })
