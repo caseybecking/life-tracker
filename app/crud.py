@@ -52,8 +52,16 @@ def get_value_by_name_and_attribute(db: Session, attribute_id: int, name: str) -
         and_(models.Value.attribute_id == attribute_id, models.Value.name == name)
     ).first()
 
-def create_value(db: Session, value: schemas.ValueCreate) -> models.Value:
-    db_value = models.Value(**value.dict())
+def create_value(db: Session, value) -> models.Value:
+    """Create a new value, accepting either a schema object or a dictionary"""
+    if hasattr(value, 'dict'):
+        # It's a schema object
+        value_data = value.dict()
+    else:
+        # It's a dictionary
+        value_data = value
+    
+    db_value = models.Value(**value_data)
     db.add(db_value)
     db.commit()
     db.refresh(db_value)
@@ -68,8 +76,16 @@ def get_data_by_value(db: Session, value_id: int, limit: int = 100) -> List[mode
         models.Data.date_recorded.desc()
     ).limit(limit).all()
 
-def create_data(db: Session, data: schemas.DataCreate) -> models.Data:
-    db_data = models.Data(**data.dict())
+def create_data(db: Session, data) -> models.Data:
+    """Create a new data entry, accepting either a schema object or a dictionary"""
+    if hasattr(data, 'dict'):
+        # It's a schema object
+        data_dict = data.dict()
+    else:
+        # It's a dictionary
+        data_dict = data
+    
+    db_data = models.Data(**data_dict)
     db.add(db_data)
     db.commit()
     db.refresh(db_data)
@@ -218,11 +234,13 @@ def get_transactions(db: Session, limit: int = 100) -> List[Dict[str, Any]]:
                 for data in data_entries:
                     transactions.append({
                         "id": data.id,
-                        "account": attr.name,
+                        "account": attr.name.replace('_Transaction', ''),
                         "category": val.name,
                         "amount": float(data.data_value),
                         "date": data.date_recorded,
-                        "notes": data.notes
+                        "updated_at": data.updated_at,
+                        "notes": data.notes,
+                        "type": "transaction"
                     })
     
     # Sort by date descending
@@ -230,12 +248,12 @@ def get_transactions(db: Session, limit: int = 100) -> List[Dict[str, Any]]:
     return transactions[:limit]
 
 def add_transaction(db: Session, account_name: str, category: str, amount: float, 
-                   transaction_date: datetime = None, notes: str = None):
+                   description: str = None, notes: str = None, transaction_date: datetime = None):
     """Add a new transaction"""
     if transaction_date is None:
         transaction_date = datetime.now()
     
-    return track_data(
+    result = track_data(
         db=db,
         noun_name="Banking",
         attribute_name=f"{account_name}_Transaction",
@@ -244,6 +262,114 @@ def add_transaction(db: Session, account_name: str, category: str, amount: float
         data_type="number",
         notes=notes
     )
+    
+    # Return enhanced transaction data
+    return {
+        'id': result.id,
+        'account': account_name,
+        'category': category,
+        'amount': amount,
+        'description': description,
+        'notes': notes,
+        'date': transaction_date.isoformat()
+    }
+
+def update_transaction(db: Session, transaction_id: int, account_name: str, category: str, amount: float, description: str = None, notes: str = None, transaction_date: datetime = None) -> Dict[str, Any]:
+    """Update an existing transaction"""
+    try:
+        # Get the existing transaction
+        db_transaction = db.query(models.Data).filter(models.Data.id == transaction_id).first()
+        
+        if not db_transaction:
+            raise ValueError(f"Transaction with ID {transaction_id} not found")
+        
+        # Preserve original date if no new date provided
+        if transaction_date is None:
+            transaction_date = db_transaction.date_recorded
+        
+        # Get the old amount for balance adjustment
+        old_amount = float(db_transaction.data_value)
+        
+        # Get the current value (category) and attribute (account)
+        current_value = db.query(models.Value).filter(models.Value.id == db_transaction.value_id).first()
+        if not current_value:
+            raise ValueError(f"Value not found for transaction {transaction_id}")
+        
+        current_attribute = db.query(models.Attribute).filter(models.Attribute.id == current_value.attribute_id).first()
+        if not current_attribute:
+            raise ValueError(f"Attribute not found for transaction {transaction_id}")
+        
+        # Check if we need to update the category (value name)
+        if current_value.name != category:
+            # Find or create the new category value
+            new_value = get_value_by_name_and_attribute(db, current_attribute.id, category)
+            if not new_value:
+                # Create new value for this category
+                new_value = create_value(db, {
+                    "name": category,
+                    "attribute_id": current_attribute.id,
+                    "data_type": "number"
+                })
+            
+            # Update the transaction to point to the new value
+            db_transaction.value_id = new_value.id
+        
+        # Update transaction record
+        db_transaction.data_value = str(amount)
+        db_transaction.notes = notes
+        # Don't update date_recorded - preserve original transaction date
+        # updated_at will be automatically updated by SQLAlchemy
+        db.commit()
+        db.refresh(db_transaction)
+        
+        # Adjust account balance (remove old amount, add new amount)
+        balance_adjustment = amount - old_amount
+        if balance_adjustment != 0:
+            update_account_balance(db, account_name, balance_adjustment, f"Transaction update: {category}")
+        
+        return {
+            'id': db_transaction.id,
+            'account': account_name,
+            'category': category,
+            'amount': amount,
+            'description': description,
+            'notes': notes,
+            'date': transaction_date.isoformat()
+        }
+    except Exception as e:
+        # Rollback the transaction on error
+        db.rollback()
+        print(f"Error updating transaction {transaction_id}: {str(e)}")
+        raise ValueError(f"Failed to update transaction: {str(e)}")
+
+def delete_transaction(db: Session, transaction_id: int) -> bool:
+    """Delete a transaction"""
+    # Get the existing transaction
+    db_transaction = db.query(models.Data).filter(models.Data.id == transaction_id).first()
+    
+    if not db_transaction:
+        raise ValueError(f"Transaction with ID {transaction_id} not found")
+    
+    # Get the amount for balance adjustment
+    old_amount = float(db_transaction.data_value)
+    
+    # Get account name from the value's attribute
+    value_obj = db.query(models.Value).filter(models.Value.id == db_transaction.value_id).first()
+    if value_obj:
+        attribute_obj = db.query(models.Attribute).filter(models.Attribute.id == value_obj.attribute_id).first()
+        if attribute_obj:
+            account_name = attribute_obj.name.replace('_Transaction', '')
+            category = value_obj.name
+            
+            # Delete the transaction
+            db.delete(db_transaction)
+            db.commit()
+            
+            # Adjust account balance (remove the amount)
+            if old_amount != 0:
+                update_account_balance(db, account_name, -old_amount, f"Transaction deletion: {category}")
+    
+    return True
 
 # Utility functions
 def get_total_balance(db: Session) -> float:
@@ -398,6 +524,17 @@ def get_account_transactions(db: Session, account_name: str, limit: int = 100) -
                     "notes": data.notes,
                     "type": "transaction"
                 })
+    
+    # Also check if there are any transactions from the main get_transactions function
+    # that might not be caught by the account-specific lookup
+    all_transactions = get_transactions(db, limit=1000)
+    account_transactions = [t for t in all_transactions if t["account"] == account_name]
+    
+    # Merge and deduplicate transactions
+    existing_ids = {t["id"] for t in transactions}
+    for transaction in account_transactions:
+        if transaction["id"] not in existing_ids:
+            transactions.append(transaction)
     
     # Sort by date descending
     transactions.sort(key=lambda x: x["date"], reverse=True)

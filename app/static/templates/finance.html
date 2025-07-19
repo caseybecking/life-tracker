@@ -221,56 +221,32 @@
 
                     <!-- Transactions Tab -->
                     <div class="tab-pane fade" id="transactions" role="tabpanel">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="card">
-                                    <div class="card-header">
-                                        <h5 class="mb-0"><i class="fas fa-exchange-alt me-2"></i>Add Transaction</h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <form id="transactionForm">
-                                            <div class="mb-3">
-                                                <label for="transactionAccount" class="form-label">Account</label>
-                                                <select class="form-control" id="transactionAccount" required>
-                                                    <option value="">Select Account</option>
-                                                </select>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label for="transactionCategory" class="form-label">Category</label>
-                                                <select class="form-control" id="transactionCategory" required>
-                                                    <option value="">Select Category</option>
-                                                </select>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label for="transactionAmount" class="form-label">Amount</label>
-                                                <input type="number" step="0.01" class="form-control" id="transactionAmount" placeholder="0.00" required>
-                                                <div class="form-text">Use positive for income, negative for expenses</div>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label for="transactionDescription" class="form-label">Description</label>
-                                                <input type="text" class="form-control" id="transactionDescription" placeholder="Transaction description">
-                                            </div>
-                                            <div class="mb-3">
-                                                <label for="transactionNotes" class="form-label">Notes</label>
-                                                <textarea class="form-control" id="transactionNotes" rows="2" placeholder="Optional notes"></textarea>
-                                            </div>
-                                            <button type="submit" class="btn btn-success">
-                                                <i class="fas fa-plus me-2"></i>Add Transaction
-                                            </button>
-                                        </form>
-                                    </div>
-                                </div>
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0"><i class="fas fa-exchange-alt me-2"></i>Transactions</h5>
+                                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTransactionModal">
+                                    <i class="fas fa-plus me-2"></i>Add Transaction
+                                </button>
                             </div>
-                            <div class="col-md-6">
-                                <div class="card">
-                                    <div class="card-header">
-                                        <h5 class="mb-0"><i class="fas fa-list me-2"></i>Recent Transactions</h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <div id="transactionsList">
-                                            <!-- Transactions will be loaded here -->
-                                        </div>
-                                    </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-striped table-hover">
+                                        <thead class="table-dark">
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Category</th>
+                                                <th>Description</th>
+                                                <th>Account</th>
+                                                <th>Amount</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="transactionsTableBody">
+                                            <tr>
+                                                <td colspan="6" class="text-center text-muted">Loading transactions...</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         </div>
@@ -475,6 +451,134 @@
         </div>
     </div>
 </div>
+
+<!-- Add Transaction Modal -->
+<div class="modal fade" id="addTransactionModal" tabindex="-1" aria-labelledby="addTransactionModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addTransactionModalLabel">
+                    <i class="fas fa-plus me-2"></i>Add Transaction
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addTransactionForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="modalTransactionAccount" class="form-label">Account</label>
+                                <select class="form-control" id="modalTransactionAccount" required>
+                                    <option value="">Select Account</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="modalTransactionCategory" class="form-label">Category</label>
+                                <select class="form-control" id="modalTransactionCategory" required>
+                                    <option value="">Select Category</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="modalTransactionAmount" class="form-label">Amount</label>
+                                <input type="number" step="0.01" class="form-control" id="modalTransactionAmount" placeholder="0.00" required>
+                                <div class="form-text">Use positive for income, negative for expenses</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="modalTransactionDate" class="form-label">Date</label>
+                                <input type="date" class="form-control" id="modalTransactionDate" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="modalTransactionDescription" class="form-label">Description</label>
+                        <input type="text" class="form-control" id="modalTransactionDescription" placeholder="Transaction description">
+                    </div>
+                    <div class="mb-3">
+                        <label for="modalTransactionNotes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="modalTransactionNotes" rows="2" placeholder="Optional notes"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="addTransactionFromModal()">Add Transaction</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Transaction Modal -->
+<div class="modal fade" id="editTransactionModal" tabindex="-1" aria-labelledby="editTransactionModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editTransactionModalLabel">
+                    <i class="fas fa-edit me-2"></i>Edit Transaction
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editTransactionForm">
+                    <input type="hidden" id="editTransactionId">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editModalTransactionAccount" class="form-label">Account</label>
+                                <select class="form-control" id="editModalTransactionAccount" required>
+                                    <option value="">Select Account</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editModalTransactionCategory" class="form-label">Category</label>
+                                <select class="form-control" id="editModalTransactionCategory" required>
+                                    <option value="">Select Category</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editModalTransactionAmount" class="form-label">Amount</label>
+                                <input type="number" step="0.01" class="form-control" id="editModalTransactionAmount" placeholder="0.00" required>
+                                <div class="form-text">Use positive for income, negative for expenses</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editModalTransactionDate" class="form-label">Date</label>
+                                <input type="date" class="form-control" id="editModalTransactionDate" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editModalTransactionDescription" class="form-label">Description</label>
+                        <input type="text" class="form-control" id="editModalTransactionDescription" placeholder="Transaction description">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editModalTransactionNotes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="editModalTransactionNotes" rows="2" placeholder="Optional notes"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="deleteTransaction()">Delete Transaction</button>
+                <button type="button" class="btn btn-primary" onclick="saveTransactionChanges()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -485,40 +589,188 @@ document.addEventListener('DOMContentLoaded', function() {
     loadCategories();
     
     // Account form submission
-    document.getElementById('accountForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        updateAccountBalance();
-    });
+    const accountForm = document.getElementById('accountForm');
+    if (accountForm) {
+        accountForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            updateAccountBalance();
+        });
+    }
     
     // Transaction form submission
-    document.getElementById('transactionForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        addTransaction();
-    });
+    const transactionForm = document.getElementById('transactionForm');
+    if (transactionForm) {
+        transactionForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            addTransaction();
+        });
+    }
     
     // Budget form submission
-    document.getElementById('budgetForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        setBudget();
-    });
+    const budgetForm = document.getElementById('budgetForm');
+    if (budgetForm) {
+        budgetForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            setBudget();
+        });
+    }
     
     // Recurring form submission
-    document.getElementById('recurringForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        addRecurringTransaction();
-    });
+    const recurringForm = document.getElementById('recurringForm');
+    if (recurringForm) {
+        recurringForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            addRecurringTransaction();
+        });
+    }
     
     // CSV import form submission
-    document.getElementById('csvImportForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        importAccountsCSV();
-    });
+    const csvImportForm = document.getElementById('csvImportForm');
+    if (csvImportForm) {
+        csvImportForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            importAccountsCSV();
+        });
+    }
     
     // Setup example data
-    document.getElementById('setupExampleData').addEventListener('click', function() {
-        setupExampleData();
-    });
+    const setupExampleDataBtn = document.getElementById('setupExampleData');
+    if (setupExampleDataBtn) {
+        setupExampleDataBtn.addEventListener('click', function() {
+            setupExampleData();
+        });
+    }
+    
+    // Set default date for transaction modal
+    const addModal = document.getElementById('addTransactionModal');
+    if (addModal) {
+        addModal.addEventListener('show.bs.modal', function() {
+            document.getElementById('modalTransactionDate').value = new Date().toISOString().slice(0, 10);
+        });
+    }
+    
+    // Populate edit modal dropdowns when it opens
+    const editModal = document.getElementById('editTransactionModal');
+    if (editModal) {
+        editModal.addEventListener('show.bs.modal', function() {
+            // Ensure dropdowns are populated
+            populateEditModalDropdowns().then(() => {
+                // Set the form values after dropdowns are populated
+                if (window.editTransactionData) {
+                    const data = window.editTransactionData;
+                    document.getElementById('editTransactionId').value = data.id;
+                    document.getElementById('editModalTransactionAmount').value = data.amount;
+                    document.getElementById('editModalTransactionDescription').value = data.description;
+                    document.getElementById('editModalTransactionNotes').value = data.notes;
+                    
+                    // Format the date properly for the date input
+                    if (data.date) {
+                        const dateObj = new Date(data.date);
+                        const formattedDate = dateObj.toISOString().slice(0, 10);
+                        document.getElementById('editModalTransactionDate').value = formattedDate;
+                    } else {
+                        document.getElementById('editModalTransactionDate').value = new Date().toISOString().slice(0, 10);
+                    }
+                    
+                    // Set account and category with a small delay to ensure dropdowns are ready
+                    setTimeout(() => {
+                        const accountDropdown = document.getElementById('editModalTransactionAccount');
+                        const categoryDropdown = document.getElementById('editModalTransactionCategory');
+                        
+                        // Set account
+                        if (accountDropdown) {
+                            accountDropdown.value = data.account;
+                            console.log('Setting account to:', data.account, 'Available options:', Array.from(accountDropdown.options).map(opt => opt.value));
+                            console.log('Account dropdown value after setting:', accountDropdown.value);
+                            
+                            // Force the dropdown to update visually
+                            accountDropdown.dispatchEvent(new Event('change'));
+                        }
+                        
+                        // Set category
+                        if (categoryDropdown) {
+                            // Try to find the category in the dropdown options
+                            const categoryOptions = Array.from(categoryDropdown.options);
+                            const matchingCategory = categoryOptions.find(option => 
+                                option.value.toLowerCase() === data.category.toLowerCase() ||
+                                option.textContent.toLowerCase() === data.category.toLowerCase()
+                            );
+                            
+                            if (matchingCategory) {
+                                categoryDropdown.value = matchingCategory.value;
+                                console.log('Found matching category:', matchingCategory.value);
+                            } else {
+                                console.log('Category not found in dropdown. Adding as custom option.');
+                                // Add the category as a custom option if it doesn't exist
+                                const option = document.createElement('option');
+                                option.value = data.category;
+                                option.textContent = data.category;
+                                categoryDropdown.appendChild(option);
+                                categoryDropdown.value = data.category;
+                            }
+                            
+                            console.log('Setting category to:', data.category, 'Available options:', Array.from(categoryDropdown.options).map(opt => opt.value));
+                            console.log('Category dropdown value after setting:', categoryDropdown.value);
+                            
+                            // Force the dropdown to update visually
+                            categoryDropdown.dispatchEvent(new Event('change'));
+                        }
+                    }, 200);
+                    
+                    // Clear the stored data
+                    window.editTransactionData = null;
+                }
+            });
+        });
+    }
+    
+    // Load all transactions when transactions tab is shown
+    const transactionsTab = document.querySelector('button[data-bs-target="#transactions"]');
+    if (transactionsTab) {
+        transactionsTab.addEventListener('click', function() {
+            loadAllTransactions();
+        });
+    }
 });
+
+async function populateEditModalDropdowns() {
+    try {
+        // Load accounts for edit modal
+        const accountsResponse = await fetch('/finance/accounts');
+        const accounts = await accountsResponse.json();
+        
+        const editAccountDropdown = document.getElementById('editModalTransactionAccount');
+        editAccountDropdown.innerHTML = '<option value="">Select Account</option>';
+        accounts.forEach(account => {
+            const option = document.createElement('option');
+            option.value = account.account_name;
+            option.textContent = account.account_name;
+            editAccountDropdown.appendChild(option);
+        });
+        
+        // Load categories for edit modal
+        const categoriesResponse = await fetch('/finance/categories');
+        const categories = await categoriesResponse.json();
+        
+        const editCategoryDropdown = document.getElementById('editModalTransactionCategory');
+        editCategoryDropdown.innerHTML = '<option value="">Select Category</option>';
+        categories.forEach(group => {
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = group.category_group;
+            
+            group.subcategories.forEach(subcategory => {
+                const option = document.createElement('option');
+                option.value = subcategory;
+                option.textContent = subcategory;
+                optgroup.appendChild(option);
+            });
+            
+            editCategoryDropdown.appendChild(optgroup);
+        });
+    } catch (error) {
+        console.error('Error populating edit modal dropdowns:', error);
+    }
+}
 
 // CSV Import/Export functions
 async function downloadSampleCSV() {
@@ -630,9 +882,6 @@ async function loadFinancialData() {
         // Load accounts
         loadAccounts(data.accounts);
         
-        // Load transactions
-        loadTransactions(data.recent_transactions);
-        
         // Load additional data
         await loadNetworthData();
         await loadSpendingData();
@@ -641,6 +890,17 @@ async function loadFinancialData() {
     } catch (error) {
         console.error('Error loading financial data:', error);
         showAlert('Error loading financial data', 'danger');
+    }
+}
+
+async function loadAllTransactions() {
+    try {
+        const response = await fetch('/finance/transactions?limit=1000');
+        const transactions = await response.json();
+        loadTransactions(transactions);
+    } catch (error) {
+        console.error('Error loading transactions:', error);
+        showAlert('Error loading transactions', 'danger');
     }
 }
 
@@ -692,7 +952,10 @@ async function loadRecentTransactions() {
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <strong>${transaction.category}</strong>
-                        <br><small class="text-muted">${transaction.account} • ${new Date(transaction.date).toLocaleDateString()}</small>
+                        <br><small class="text-muted">${transaction.account} • ${new Date(transaction.date).toLocaleDateString()}
+                        ${transaction.updated_at && new Date(transaction.updated_at) > new Date(transaction.date) ? 
+                            ` • ✏️ Modified` : 
+                            ''}</small>
                     </div>
                     <span class="${amountClass} fw-bold">${amountSign}$${Math.abs(transaction.amount).toFixed(2)}</span>
                 </div>
@@ -815,7 +1078,9 @@ function populateCategoryDropdowns(categories) {
     const categoryDropdowns = [
         'transactionCategory',
         'budgetCategory', 
-        'recurringCategory'
+        'recurringCategory',
+        'modalTransactionCategory',
+        'editModalTransactionCategory'
     ];
     
     categoryDropdowns.forEach(dropdownId => {
@@ -883,7 +1148,12 @@ function loadAccounts(accounts) {
     }
     
     // Populate account dropdowns
-    const accountDropdowns = [transactionAccount, recurringAccount];
+    const accountDropdowns = [
+        transactionAccount, 
+        recurringAccount,
+        document.getElementById('modalTransactionAccount'),
+        document.getElementById('editModalTransactionAccount')
+    ];
     accountDropdowns.forEach(dropdown => {
         if (dropdown) {
             dropdown.innerHTML = '<option value="">Select Account</option>';
@@ -898,33 +1168,44 @@ function loadAccounts(accounts) {
 }
 
 function loadTransactions(transactions) {
-    const transactionsList = document.getElementById('transactionsList');
-    if (!transactionsList) return;
+    const transactionsTableBody = document.getElementById('transactionsTableBody');
+    if (!transactionsTableBody) return;
     
-    transactionsList.innerHTML = '';
+    transactionsTableBody.innerHTML = '';
     
     if (transactions.length === 0) {
-        transactionsList.innerHTML = '<p class="text-muted">No transactions yet.</p>';
+        transactionsTableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No transactions yet.</td></tr>';
         return;
     }
     
     transactions.forEach(transaction => {
-        const transactionItem = document.createElement('div');
-        transactionItem.className = 'border-bottom pb-2 mb-2';
+        const row = document.createElement('tr');
         const amountClass = transaction.amount >= 0 ? 'text-success' : 'text-danger';
         const amountSign = transaction.amount >= 0 ? '+' : '';
         
-        transactionItem.innerHTML = `
-            <div class="d-flex justify-content-between align-items-start">
-                <div>
-                    <strong>${transaction.category}</strong>
-                    <br><small class="text-muted">${transaction.account} • ${new Date(transaction.date).toLocaleDateString()}</small>
+        // Clean up account name by removing "_Transaction" suffix if present
+        const cleanAccountName = transaction.account.replace('_Transaction', '');
+        
+        row.innerHTML = `
+            <td>
+                ${new Date(transaction.date).toLocaleDateString()}
+                ${transaction.updated_at && new Date(transaction.updated_at) > new Date(transaction.date) ? 
+                    `<br><small class="text-muted" title="Last updated: ${new Date(transaction.updated_at).toLocaleString()}">✏️ Modified</small>` : 
+                    ''}
+            </td>
+            <td><span class="badge bg-secondary">${transaction.category}</span></td>
+            <td>${transaction.description || transaction.notes || '-'}</td>
+            <td>${cleanAccountName}</td>
+            <td class="${amountClass} fw-bold">${amountSign}$${Math.abs(transaction.amount).toFixed(2)}</td>
+            <td>
+                <div class="btn-group btn-group-sm" role="group">
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="editTransaction('${transaction.id}', '${cleanAccountName}', '${transaction.category}', ${transaction.amount}, '${(transaction.description || '').replace(/'/g, "\\'")}', '${(transaction.notes || '').replace(/'/g, "\\'")}', '${transaction.date}')" title="Edit Transaction">
+                        <i class="fas fa-edit"></i>
+                    </button>
                 </div>
-                <span class="${amountClass} fw-bold">${amountSign}$${Math.abs(transaction.amount).toFixed(2)}</span>
-            </div>
-            ${transaction.notes ? `<small class="text-muted">${transaction.notes}</small>` : ''}
+            </td>
         `;
-        transactionsList.appendChild(transactionItem);
+        transactionsTableBody.appendChild(row);
     });
 }
 
@@ -953,6 +1234,53 @@ async function updateAccountBalance() {
     } catch (error) {
         console.error('Error updating balance:', error);
         showAlert('Error updating account balance', 'danger');
+    }
+}
+
+async function addTransactionFromModal() {
+    const accountName = document.getElementById('modalTransactionAccount').value;
+    const category = document.getElementById('modalTransactionCategory').value;
+    const amount = parseFloat(document.getElementById('modalTransactionAmount').value);
+    const description = document.getElementById('modalTransactionDescription').value;
+    const notes = document.getElementById('modalTransactionNotes').value;
+    const date = document.getElementById('modalTransactionDate').value;
+    
+    if (!accountName || !category || isNaN(amount) || !date) {
+        showAlert('Please fill in all required fields', 'warning');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/finance/transactions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                account_name: accountName,
+                category: category,
+                amount: amount,
+                description: description,
+                notes: notes,
+                date: date
+            })
+        });
+        
+        if (response.ok) {
+            showAlert('Transaction added successfully', 'success');
+            document.getElementById('addTransactionForm').reset();
+            // Set default date to today
+            document.getElementById('modalTransactionDate').value = new Date().toISOString().slice(0, 10);
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('addTransactionModal'));
+            modal.hide();
+            loadFinancialData();
+        } else {
+            throw new Error('Failed to add transaction');
+        }
+    } catch (error) {
+        console.error('Error adding transaction:', error);
+        showAlert('Error adding transaction', 'danger');
     }
 }
 
@@ -993,6 +1321,95 @@ async function addTransaction() {
     } catch (error) {
         console.error('Error adding transaction:', error);
         showAlert('Error adding transaction', 'danger');
+    }
+}
+
+function editTransaction(id, account, category, amount, description, notes, date) {
+    // Store the values to set after modal opens
+    window.editTransactionData = {
+        id: id,
+        account: account,
+        category: category,
+        amount: amount,
+        description: description || '',
+        notes: notes || '',
+        date: date
+    };
+    
+    // Show the modal
+    const modal = new bootstrap.Modal(document.getElementById('editTransactionModal'));
+    modal.show();
+}
+
+async function saveTransactionChanges() {
+    const id = document.getElementById('editTransactionId').value;
+    const accountName = document.getElementById('editModalTransactionAccount').value;
+    const category = document.getElementById('editModalTransactionCategory').value;
+    const amount = parseFloat(document.getElementById('editModalTransactionAmount').value);
+    const description = document.getElementById('editModalTransactionDescription').value;
+    const notes = document.getElementById('editModalTransactionNotes').value;
+    const date = document.getElementById('editModalTransactionDate').value;
+    
+    if (!accountName || !category || isNaN(amount) || !date) {
+        showAlert('Please fill in all required fields', 'warning');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/finance/transactions/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                account_name: accountName,
+                category: category,
+                amount: amount,
+                description: description,
+                notes: notes,
+                date: date
+            })
+        });
+        
+        if (response.ok) {
+            showAlert('Transaction updated successfully', 'success');
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editTransactionModal'));
+            modal.hide();
+            loadAllTransactions();
+        } else {
+            throw new Error('Failed to update transaction');
+        }
+    } catch (error) {
+        console.error('Error updating transaction:', error);
+        showAlert('Error updating transaction', 'danger');
+    }
+}
+
+async function deleteTransaction() {
+    const id = document.getElementById('editTransactionId').value;
+    
+    if (!confirm('Are you sure you want to delete this transaction?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/finance/transactions/${id}`, {
+            method: 'DELETE'
+        });
+        
+        if (response.ok) {
+            showAlert('Transaction deleted successfully', 'success');
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editTransactionModal'));
+            modal.hide();
+            loadAllTransactions();
+        } else {
+            throw new Error('Failed to delete transaction');
+        }
+    } catch (error) {
+        console.error('Error deleting transaction:', error);
+        showAlert('Error deleting transaction', 'danger');
     }
 }
 

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any
@@ -227,24 +227,81 @@ def get_transactions(limit: int = 100, db: Session = Depends(get_db)):
 
 @router.post("/transactions")
 def add_transaction(
-    account_name: str,
-    category: str,
-    amount: float,
-    description: str = None,
-    transaction_date: datetime = None,
-    notes: str = None,
+    account_name: str = Form(...),
+    category: str = Form(...),
+    amount: float = Form(...),
+    description: str = Form(""),
+    notes: str = Form(""),
+    date: str = Form(None),
     db: Session = Depends(get_db)
 ):
     """Add a new transaction"""
     try:
+        # Parse date if provided
+        transaction_date = None
+        if date:
+            try:
+                transaction_date = datetime.strptime(date, "%Y-%m-%d")
+            except ValueError:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid date format. Use YYYY-MM-DD"
+                )
+        
         result = crud.add_transaction(
-            db, account_name, category, amount, transaction_date, notes
+            db, account_name, category, amount, description, notes, transaction_date
         )
         return {"message": "Transaction added successfully", "data": result}
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to add transaction: {str(e)}"
+        )
+
+@router.put("/transactions/{transaction_id}")
+def update_transaction(
+    transaction_id: int,
+    account_name: str = Form(...),
+    category: str = Form(...),
+    amount: float = Form(...),
+    description: str = Form(""),
+    notes: str = Form(""),
+    date: str = Form(None),
+    db: Session = Depends(get_db)
+):
+    """Update an existing transaction"""
+    try:
+        # Parse date only if provided
+        transaction_date = None
+        if date:
+            try:
+                transaction_date = datetime.strptime(date, "%Y-%m-%d")
+            except ValueError:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid date format. Use YYYY-MM-DD"
+                )
+        
+        result = crud.update_transaction(
+            db, transaction_id, account_name, category, amount, description, notes, transaction_date
+        )
+        return {"message": "Transaction updated successfully", "data": result}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update transaction: {str(e)}"
+        )
+
+@router.delete("/transactions/{transaction_id}")
+def delete_transaction(transaction_id: int, db: Session = Depends(get_db)):
+    """Delete a transaction"""
+    try:
+        crud.delete_transaction(db, transaction_id)
+        return {"message": "Transaction deleted successfully"}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete transaction: {str(e)}"
         )
 
 @router.get("/balance/total")

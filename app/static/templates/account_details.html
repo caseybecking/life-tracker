@@ -303,7 +303,10 @@ function updateTransactionsTable(transactions) {
         
         row.className = rowClass;
         row.innerHTML = `
-            <td>${new Date(transaction.date).toLocaleDateString()}</td>
+            <td>${new Date(transaction.date).toLocaleDateString()}
+                ${transaction.updated_at && new Date(transaction.updated_at) > new Date(transaction.date) ? 
+                    ` <small class="text-muted" title="Last updated: ${new Date(transaction.updated_at).toLocaleString()}">✏️</small>` : 
+                    ''}</td>
             <td><span class="badge ${categoryBadge}">${transaction.category}</span></td>
             <td>${transaction.description || '-'}</td>
             <td class="${amountClass} fw-bold">${amountSign}$${Math.abs(transaction.amount).toFixed(2)}</td>
