@@ -316,4 +316,25 @@ def get_account_balance_history(account_name: str, db: Session = Depends(get_db)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get balance history: {str(e)}"
+        )
+
+@router.post("/accounts/{account_name}/calculate-balance")
+def calculate_account_balance(
+    account_name: str, 
+    db: Session = Depends(get_db)
+):
+    """Calculate and store the daily balance for an account based on transactions"""
+    try:
+        result = crud.calculate_and_store_daily_balance(db, account_name)
+        return {
+            "message": "Balance calculated and stored successfully",
+            "data": result
+        }
+    except Exception as e:
+        import traceback
+        print(f"Error calculating balance for {account_name}: {str(e)}")
+        print(traceback.format_exc())
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to calculate balance: {str(e)}"
         ) 
