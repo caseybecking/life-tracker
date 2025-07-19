@@ -41,6 +41,11 @@ async def track_page(request: Request):
     """General tracking page"""
     return templates.TemplateResponse("track.html", {"request": request})
 
+@app.get("/account-details", response_class=HTMLResponse)
+async def account_details_page(request: Request):
+    """Account details page"""
+    return templates.TemplateResponse("account_details.html", {"request": request})
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""

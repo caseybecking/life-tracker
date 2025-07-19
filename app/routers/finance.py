@@ -254,3 +254,66 @@ def setup_example_financial_data(db: Session = Depends(get_db)):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create example data: {str(e)}"
         ) 
+
+@router.get("/accounts/{account_name}/details")
+def get_account_details(account_name: str, db: Session = Depends(get_db)):
+    """Get detailed account information including transactions and balance history"""
+    try:
+        # Get account information
+        accounts = crud.get_financial_accounts(db)
+        account = next((acc for acc in accounts if acc['account_name'] == account_name), None)
+        
+        if not account:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Account '{account_name}' not found"
+            )
+        
+        # Get transactions for this account
+        transactions = crud.get_account_transactions(db, account_name, limit=100)
+        
+        # Get balance history
+        balance_history = crud.get_account_balance_history(db, account_name)
+        
+        # Calculate summary statistics
+        summary = crud.get_account_summary(db, account_name)
+        
+        return {
+            "account": account,
+            "transactions": transactions,
+            "balance_history": balance_history,
+            "summary": summary
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get account details: {str(e)}"
+        )
+
+@router.get("/accounts/{account_name}/transactions")
+def get_account_transactions(
+    account_name: str, 
+    limit: int = 100, 
+    db: Session = Depends(get_db)
+):
+    """Get transactions for a specific account"""
+    try:
+        transactions = crud.get_account_transactions(db, account_name, limit)
+        return transactions
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get account transactions: {str(e)}"
+        )
+
+@router.get("/accounts/{account_name}/balance-history")
+def get_account_balance_history(account_name: str, db: Session = Depends(get_db)):
+    """Get balance history for a specific account"""
+    try:
+        balance_history = crud.get_account_balance_history(db, account_name)
+        return balance_history
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get balance history: {str(e)}"
+        ) 

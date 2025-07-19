@@ -1,0 +1,335 @@
+{% extends "base.html" %}
+
+{% block title %}Life Tracker - Account Details{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/finance">Finance</a></li>
+                <li class="breadcrumb-item"><a href="/finance#accounts">Accounts</a></li>
+                <li class="breadcrumb-item active" aria-current="page" id="accountNameBreadcrumb">Account Details</li>
+            </ol>
+        </nav>
+        
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="mb-0">
+                <i class="fas fa-university text-primary me-2"></i><span id="accountNameHeader">Account Details</span>
+            </h1>
+            <div>
+                <button class="btn btn-outline-primary btn-sm" onclick="window.history.back()">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Accounts
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Account Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <h5 class="card-title">Current Balance</h5>
+                <h2 class="mb-0" id="currentBalance">$0.00</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <h5 class="card-title">Total Income</h5>
+                <h2 class="mb-0" id="totalIncome">$0.00</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-danger text-white">
+            <div class="card-body text-center">
+                <h5 class="card-title">Total Expenses</h5>
+                <h2 class="mb-0" id="totalExpenses">$0.00</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <h5 class="card-title">Transactions</h5>
+                <h2 class="mb-0" id="totalTransactions">0</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Balance Chart and Summary -->
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Balance Over Time</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="balanceChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Account Summary</h5>
+            </div>
+            <div class="card-body">
+                <div id="accountSummary">
+                    <div class="mb-3">
+                        <strong>Net Change:</strong>
+                        <span id="netChange" class="float-end">$0.00</span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Average Transaction:</strong>
+                        <span id="averageTransaction" class="float-end">$0.00</span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Largest Transaction:</strong>
+                        <span id="largestTransaction" class="float-end">$0.00</span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Most Common Category:</strong>
+                        <span id="mostCommonCategory" class="float-end">-</span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Balance Updates:</strong>
+                        <span id="balanceChanges" class="float-end">0</span>
+                    </div>
+                    <hr>
+                    <div class="mb-3">
+                        <strong>Account Type:</strong>
+                        <span id="accountType" class="float-end">-</span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Institution:</strong>
+                        <span id="institution" class="float-end">-</span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Last Updated:</strong>
+                        <span id="lastUpdated" class="float-end">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Transactions Table -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-list me-2"></i>Transaction History</h5>
+                <div>
+                    <button class="btn btn-outline-primary btn-sm" onclick="refreshAccountData()">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Category</th>
+                                <th>Description</th>
+                                <th>Amount</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transactionsTable">
+                            <tr>
+                                <td colspan="5" class="text-center text-muted">Loading transactions...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let balanceChart;
+let accountName;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Get account name from URL parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    accountName = urlParams.get('account');
+    
+    if (!accountName) {
+        showAlert('No account specified', 'danger');
+        return;
+    }
+    
+    // Update page title and breadcrumb
+    document.getElementById('accountNameHeader').textContent = accountName;
+    document.getElementById('accountNameBreadcrumb').textContent = accountName;
+    
+    // Load account details
+    loadAccountDetails();
+});
+
+async function loadAccountDetails() {
+    try {
+        const response = await fetch(`/finance/accounts/${encodeURIComponent(accountName)}/details`);
+        if (!response.ok) {
+            throw new Error('Failed to load account details');
+        }
+        
+        const data = await response.json();
+        
+        // Update summary cards
+        updateSummaryCards(data);
+        
+        // Update account summary
+        updateAccountSummary(data.summary, data.account);
+        
+        // Create balance chart
+        createBalanceChart(data.balance_history);
+        
+        // Update transactions table
+        updateTransactionsTable(data.transactions);
+        
+    } catch (error) {
+        console.error('Error loading account details:', error);
+        showAlert('Error loading account details', 'danger');
+    }
+}
+
+function updateSummaryCards(data) {
+    document.getElementById('currentBalance').textContent = `$${data.account.balance.toFixed(2)}`;
+    document.getElementById('totalIncome').textContent = `$${data.summary.total_income.toFixed(2)}`;
+    document.getElementById('totalExpenses').textContent = `$${data.summary.total_expenses.toFixed(2)}`;
+    document.getElementById('totalTransactions').textContent = data.summary.total_transactions;
+}
+
+function updateAccountSummary(summary, account) {
+    const netChangeClass = summary.net_change >= 0 ? 'text-success' : 'text-danger';
+    const netChangeSign = summary.net_change >= 0 ? '+' : '';
+    
+    document.getElementById('netChange').textContent = `${netChangeSign}$${summary.net_change.toFixed(2)}`;
+    document.getElementById('netChange').className = `float-end ${netChangeClass}`;
+    
+    document.getElementById('averageTransaction').textContent = `$${summary.average_transaction.toFixed(2)}`;
+    document.getElementById('largestTransaction').textContent = `$${summary.largest_transaction.toFixed(2)}`;
+    document.getElementById('mostCommonCategory').textContent = summary.most_common_category || '-';
+    document.getElementById('balanceChanges').textContent = summary.balance_changes;
+    
+    document.getElementById('accountType').textContent = account.account_type || 'Unknown';
+    document.getElementById('institution').textContent = account.institution || 'Unknown';
+    document.getElementById('lastUpdated').textContent = account.last_updated ? 
+        new Date(account.last_updated).toLocaleDateString() : 'Never';
+}
+
+function createBalanceChart(balanceHistory) {
+    const ctx = document.getElementById('balanceChart').getContext('2d');
+    
+    // Destroy existing chart if it exists
+    if (balanceChart) {
+        balanceChart.destroy();
+    }
+    
+    const labels = balanceHistory.map(item => new Date(item.date).toLocaleDateString());
+    const data = balanceHistory.map(item => item.balance);
+    
+    balanceChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Balance',
+                data: data,
+                borderColor: 'rgb(75, 192, 192)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                tension: 0.1,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value.toLocaleString();
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function updateTransactionsTable(transactions) {
+    const tbody = document.getElementById('transactionsTable');
+    tbody.innerHTML = '';
+    
+    if (transactions.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No transactions found</td></tr>';
+        return;
+    }
+    
+    transactions.forEach(transaction => {
+        const row = document.createElement('tr');
+        const amountClass = transaction.amount >= 0 ? 'text-success' : 'text-danger';
+        const amountSign = transaction.amount >= 0 ? '+' : '';
+        
+        row.innerHTML = `
+            <td>${new Date(transaction.date).toLocaleDateString()}</td>
+            <td><span class="badge bg-secondary">${transaction.category}</span></td>
+            <td>${transaction.description || '-'}</td>
+            <td class="${amountClass} fw-bold">${amountSign}$${Math.abs(transaction.amount).toFixed(2)}</td>
+            <td>${transaction.notes || '-'}</td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+async function refreshAccountData() {
+    try {
+        await loadAccountDetails();
+        showAlert('Account data refreshed successfully', 'success');
+    } catch (error) {
+        console.error('Error refreshing account data:', error);
+        showAlert('Error refreshing account data', 'danger');
+    }
+}
+
+function showAlert(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.querySelector('main').insertBefore(alertDiv, document.querySelector('main').firstChild);
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+</script>
+{% endblock %} 

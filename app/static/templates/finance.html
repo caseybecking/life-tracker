@@ -658,6 +658,9 @@ function loadAccounts(accounts) {
                 </div>
                 <div class="ms-3">
                     <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-outline-info btn-sm" onclick="viewAccountDetails('${account.account_name}')" title="View Account Details">
+                            <i class="fas fa-chart-line"></i>
+                        </button>
                         <button type="button" class="btn btn-outline-primary btn-sm" onclick="quickEditAccount('${account.account_name}', ${account.balance})" title="Quick Edit Balance">
                             <i class="fas fa-edit"></i>
                         </button>
@@ -993,6 +996,10 @@ async function refreshAccounts() {
         console.error('Error refreshing accounts:', error);
         showAlert('Error refreshing accounts', 'danger');
     }
+}
+
+function viewAccountDetails(accountName) {
+    window.location.href = `/account-details?account=${encodeURIComponent(accountName)}`;
 }
 </script>
 {% endblock %} 

@@ -259,6 +259,107 @@ def get_financial_summary(db: Session) -> Dict[str, Any]:
         "recent_transactions": get_transactions(db, limit=20)
     }
 
+def get_account_transactions(db: Session, account_name: str, limit: int = 100) -> List[Dict[str, Any]]:
+    """Get transactions for a specific account"""
+    banking_noun = get_noun_by_name(db, "Banking")
+    if not banking_noun:
+        return []
+    
+    transactions = []
+    # Look for the specific account's transaction attribute
+    account_attr = get_attribute_by_name_and_noun(db, banking_noun.id, f"{account_name}_Transaction")
+    
+    if account_attr:
+        transaction_values = get_values_by_attribute(db, account_attr.id)
+        for val in transaction_values:
+            data_entries = get_data_by_value(db, val.id, limit)
+            for data in data_entries:
+                transactions.append({
+                    "id": data.id,
+                    "account": account_name,
+                    "category": val.name,
+                    "amount": float(data.data_value),
+                    "date": data.date_recorded,
+                    "notes": data.notes
+                })
+    
+    # Sort by date descending
+    transactions.sort(key=lambda x: x["date"], reverse=True)
+    return transactions[:limit]
+
+def get_account_balance_history(db: Session, account_name: str) -> List[Dict[str, Any]]:
+    """Get balance history for a specific account"""
+    banking_noun = get_noun_by_name(db, "Banking")
+    if not banking_noun:
+        return []
+    
+    balance_history = []
+    account_attr = get_attribute_by_name_and_noun(db, banking_noun.id, account_name)
+    
+    if account_attr:
+        balance_value = get_value_by_name_and_attribute(db, account_attr.id, "Balance")
+        if balance_value:
+            data_entries = get_data_by_value(db, balance_value.id, limit=50)
+            for data in data_entries:
+                balance_history.append({
+                    "date": data.date_recorded,
+                    "balance": float(data.data_value),
+                    "notes": data.notes
+                })
+    
+    # Sort by date ascending for chart
+    balance_history.sort(key=lambda x: x["date"])
+    return balance_history
+
+def get_account_summary(db: Session, account_name: str) -> Dict[str, Any]:
+    """Get summary statistics for a specific account"""
+    transactions = get_account_transactions(db, account_name, limit=1000)
+    balance_history = get_account_balance_history(db, account_name)
+    
+    if not transactions:
+        return {
+            "total_transactions": 0,
+            "total_income": 0,
+            "total_expenses": 0,
+            "net_change": 0,
+            "average_transaction": 0,
+            "largest_transaction": 0,
+            "most_common_category": None,
+            "balance_changes": 0
+        }
+    
+    # Calculate transaction statistics
+    total_transactions = len(transactions)
+    total_income = sum(t["amount"] for t in transactions if t["amount"] > 0)
+    total_expenses = abs(sum(t["amount"] for t in transactions if t["amount"] < 0))
+    net_change = sum(t["amount"] for t in transactions)
+    average_transaction = net_change / total_transactions if total_transactions > 0 else 0
+    
+    # Find largest transaction
+    largest_transaction = max(abs(t["amount"]) for t in transactions) if transactions else 0
+    
+    # Find most common category
+    category_counts = {}
+    for transaction in transactions:
+        category = transaction["category"]
+        category_counts[category] = category_counts.get(category, 0) + 1
+    
+    most_common_category = max(category_counts.items(), key=lambda x: x[1])[0] if category_counts else None
+    
+    # Count balance changes
+    balance_changes = len(balance_history)
+    
+    return {
+        "total_transactions": total_transactions,
+        "total_income": total_income,
+        "total_expenses": total_expenses,
+        "net_change": net_change,
+        "average_transaction": average_transaction,
+        "largest_transaction": largest_transaction,
+        "most_common_category": most_common_category,
+        "balance_changes": balance_changes
+    }
+
 def get_finance_categories(db: Session) -> List[Dict[str, Any]]:
     """Get all available finance categories"""
     categories_noun = get_noun_by_name(db, "Finance_Categories")
