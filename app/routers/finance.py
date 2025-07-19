@@ -66,6 +66,23 @@ def get_total_balance(db: Session = Depends(get_db)):
     """Get total balance across all accounts"""
     return {"total_balance": crud.get_total_balance(db)}
 
+@router.get("/categories", response_model=List[Dict[str, Any]])
+def get_finance_categories(db: Session = Depends(get_db)):
+    """Get all available finance categories"""
+    return crud.get_finance_categories(db)
+
+@router.post("/setup/categories")
+def setup_finance_categories(db: Session = Depends(get_db)):
+    """Set up comprehensive finance categories"""
+    try:
+        result = crud.setup_finance_categories(db)
+        return {"message": "Finance categories created successfully", "categories_created": result}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create categories: {str(e)}"
+        )
+
 # Example data endpoints for quick setup
 @router.post("/setup/example-data")
 def setup_example_financial_data(db: Session = Depends(get_db)):
@@ -75,10 +92,10 @@ def setup_example_financial_data(db: Session = Depends(get_db)):
         crud.update_account_balance(db, "SF_Checking", 11818.71, "Initial balance")
         crud.update_account_balance(db, "Cuna", 5000.00, "Initial balance")
         
-        # Add example transactions
+        # Add example transactions with proper categories
         crud.add_transaction(db, "SF_Checking", "Income", 2500.00, "Salary", notes="Monthly salary")
-        crud.add_transaction(db, "SF_Checking", "Food", -150.00, "Grocery shopping", notes="Weekly groceries")
-        crud.add_transaction(db, "SF_Checking", "Gas", -45.00, "Fuel", notes="Car fuel")
+        crud.add_transaction(db, "SF_Checking", "Groceries", -150.00, "Grocery shopping", notes="Weekly groceries")
+        crud.add_transaction(db, "SF_Checking", "Gas & Fuel", -45.00, "Fuel", notes="Car fuel")
         crud.add_transaction(db, "Cuna", "Income", 500.00, "Interest", notes="Monthly interest")
         
         return {"message": "Example financial data created successfully"}

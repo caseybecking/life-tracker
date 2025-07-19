@@ -257,4 +257,129 @@ def get_financial_summary(db: Session) -> Dict[str, Any]:
         "total_balance": get_total_balance(db),
         "accounts": get_financial_accounts(db),
         "recent_transactions": get_transactions(db, limit=20)
+    }
+
+def get_finance_categories(db: Session) -> List[Dict[str, Any]]:
+    """Get all available finance categories"""
+    categories_noun = get_noun_by_name(db, "Finance_Categories")
+    if not categories_noun:
+        return []
+    
+    categories = []
+    for attr in categories_noun.attributes:
+        categories.append({
+            "category_group": attr.name,
+            "subcategories": [val.name for val in attr.values]
+        })
+    
+    return categories
+
+def setup_finance_categories(db: Session) -> Dict[str, Any]:
+    """Set up comprehensive finance categories"""
+    categories_data = {
+        "Auto & Transport": [
+            "Auto Insurance", "Auto Payment", "Gas & Fuel", "Parking", 
+            "Public Transportation", "Service & Parts", "Erica Auto Payment", 
+            "Erica Gas Fuel", "Erica Parking"
+        ],
+        "Bills & Utilities": [
+            "Gardener", "Home Phone", "Internet", "Mobile Phone", "Television", 
+            "Utilities", "Electric", "Gas", "Water and Trash"
+        ],
+        "Business Services": [
+            "Advertising", "Legal", "Office Supplies", "Printing", "Shipping"
+        ],
+        "Education": [
+            "Books & Supplies", "Student Loan", "Tuition"
+        ],
+        "Entertainment": [
+            "Amusement", "Arts", "Movies & DVDs", "Music", "Newspapers & Magazines"
+        ],
+        "Fees & Charges": [
+            "ATM Fee", "Credit Union Fee", "Finance Charge", "Late Fee", 
+            "Service Fee", "Trade Commissions"
+        ],
+        "Financial": [
+            "Financial Advisor", "Life Insurance"
+        ],
+        "Food & Dining": [
+            "Alcohol & Bars", "Coffee Shops", "Fast Food", "Groceries", "Restaurants"
+        ],
+        "Gifts & Donations": [
+            "Charity", "Gift"
+        ],
+        "Health & Fitness": [
+            "Dentist", "Doctor", "Eyecare", "Gym", "Health Insurance", 
+            "Pharmacy", "Sports"
+        ],
+        "Home": [
+            "Furnishings", "Home Improvement", "Home Insurance", "Home Services", 
+            "Home Supplies", "Lawn & Garden", "Mortgage & Rent"
+        ],
+        "Kids": [
+            "Allowance", "Baby Supplies", "Babysitter & Daycare", "Child Support", 
+            "Kids Activities", "Toys", "Clothing"
+        ],
+        "Personal Care": [
+            "Hair", "Laundry", "Nail Salon", "Spa & Massage"
+        ],
+        "Pets": [
+            "Pet Food & Supplies", "Pet Grooming", "Veterinary"
+        ],
+        "Shopping": [
+            "Books", "Clothing", "Electronics & Software", "Hobbies", "Sporting Goods"
+        ],
+        "Taxes": [
+            "Federal Tax", "Local Tax", "Property Tax", "Sales Tax", "State Tax"
+        ],
+        "Transfer": [
+            "Credit Card Payment", "Transfer for Cash Spending"
+        ],
+        "Travel": [
+            "Air Travel", "Car Rental & Taxi", "Hotel", "Vacation"
+        ],
+        "Uncategorized": [
+            "Cash & ATM", "Check"
+        ]
+    }
+    
+    # Create the main categories noun
+    categories_noun = get_noun_by_name(db, "Finance_Categories")
+    if not categories_noun:
+        categories_noun = create_noun(db, schemas.NounCreate(
+            name="Finance_Categories",
+            description="Comprehensive finance categories for tracking expenses and income"
+        ))
+    
+    categories_created = {}
+    
+    # Create each category group and its subcategories
+    for category_group, subcategories in categories_data.items():
+        # Create the category group attribute
+        category_attr = get_attribute_by_name_and_noun(db, categories_noun.id, category_group)
+        if not category_attr:
+            category_attr = create_attribute(db, schemas.AttributeCreate(
+                noun_id=categories_noun.id,
+                name=category_group,
+                description=f"Category group for {category_group}"
+            ))
+        
+        categories_created[category_group] = []
+        
+        # Create each subcategory
+        for subcategory in subcategories:
+            subcategory_value = get_value_by_name_and_attribute(db, category_attr.id, subcategory)
+            if not subcategory_value:
+                subcategory_value = create_value(db, schemas.ValueCreate(
+                    attribute_id=category_attr.id,
+                    name=subcategory,
+                    data_type="string",
+                    description=f"Subcategory: {subcategory}"
+                ))
+                categories_created[category_group].append(subcategory)
+    
+    return {
+        "total_groups": len(categories_created),
+        "total_subcategories": sum(len(subcats) for subcats in categories_created.values()),
+        "categories": categories_created
     } 
