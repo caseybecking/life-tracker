@@ -11,143 +11,301 @@
     </div>
 </div>
 
-<!-- Financial Summary -->
+<!-- Finance Navigation -->
 <div class="row mb-4">
-    <div class="col-md-4">
-        <div class="card bg-primary text-white">
-            <div class="card-body text-center">
-                <h5 class="card-title">Total Balance</h5>
-                <h2 class="mb-0" id="totalBalance">$0.00</h2>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card bg-success text-white">
-            <div class="card-body text-center">
-                <h5 class="card-title">Accounts</h5>
-                <h2 class="mb-0" id="accountCount">0</h2>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card bg-info text-white">
-            <div class="card-body text-center">
-                <h5 class="card-title">Recent Transactions</h5>
-                <h2 class="mb-0" id="transactionCount">0</h2>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Account Management -->
-<div class="row">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="fas fa-university me-2"></i>Account Management</h5>
-            </div>
-            <div class="card-body">
-                <form id="accountForm">
-                    <div class="mb-3">
-                        <label for="accountName" class="form-label">Account Name</label>
-                        <input type="text" class="form-control" id="accountName" placeholder="e.g., SF_Checking, Cuna">
-                    </div>
-                    <div class="mb-3">
-                        <label for="accountBalance" class="form-label">Current Balance</label>
-                        <input type="number" step="0.01" class="form-control" id="accountBalance" placeholder="0.00">
-                    </div>
-                    <div class="mb-3">
-                        <label for="accountNotes" class="form-label">Notes</label>
-                        <textarea class="form-control" id="accountNotes" rows="2" placeholder="Optional notes"></textarea>
-                    </div>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save me-2"></i>Update Balance
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="fas fa-exchange-alt me-2"></i>Add Transaction</h5>
-            </div>
-            <div class="card-body">
-                <form id="transactionForm">
-                    <div class="mb-3">
-                        <label for="transactionAccount" class="form-label">Account</label>
-                        <select class="form-control" id="transactionAccount" required>
-                            <option value="">Select Account</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label for="transactionCategory" class="form-label">Category</label>
-                        <input type="text" class="form-control" id="transactionCategory" placeholder="e.g., Income, Food, Gas" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="transactionAmount" class="form-label">Amount</label>
-                        <input type="number" step="0.01" class="form-control" id="transactionAmount" placeholder="0.00" required>
-                        <div class="form-text">Use positive for income, negative for expenses</div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="transactionDescription" class="form-label">Description</label>
-                        <input type="text" class="form-control" id="transactionDescription" placeholder="Transaction description">
-                    </div>
-                    <div class="mb-3">
-                        <label for="transactionNotes" class="form-label">Notes</label>
-                        <textarea class="form-control" id="transactionNotes" rows="2" placeholder="Optional notes"></textarea>
-                    </div>
-                    <button type="submit" class="btn btn-success">
-                        <i class="fas fa-plus me-2"></i>Add Transaction
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Accounts and Transactions -->
-<div class="row mt-4">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="fas fa-university me-2"></i>Accounts</h5>
-            </div>
-            <div class="card-body">
-                <div id="accountsList" class="list-group">
-                    <!-- Accounts will be loaded here -->
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="fas fa-list me-2"></i>Recent Transactions</h5>
-            </div>
-            <div class="card-body">
-                <div id="transactionsList">
-                    <!-- Transactions will be loaded here -->
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Setup Example Data -->
-<div class="row mt-4">
     <div class="col-12">
         <div class="card">
             <div class="card-header">
-                <h5 class="mb-0"><i class="fas fa-database me-2"></i>Quick Setup</h5>
+                <ul class="nav nav-tabs card-header-tabs" id="financeTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button" role="tab">
+                            <i class="fas fa-chart-pie me-2"></i>Overview
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="accounts-tab" data-bs-toggle="tab" data-bs-target="#accounts" type="button" role="tab">
+                            <i class="fas fa-university me-2"></i>Accounts
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="transactions-tab" data-bs-toggle="tab" data-bs-target="#transactions" type="button" role="tab">
+                            <i class="fas fa-exchange-alt me-2"></i>Transactions
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="budget-tab" data-bs-toggle="tab" data-bs-target="#budget" type="button" role="tab">
+                            <i class="fas fa-chart-line me-2"></i>Budget
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="recurring-tab" data-bs-toggle="tab" data-bs-target="#recurring" type="button" role="tab">
+                            <i class="fas fa-redo me-2"></i>Recurring
+                        </button>
+                    </li>
+                </ul>
             </div>
             <div class="card-body">
-                <p class="mb-3">Need some example data to get started?</p>
-                <button id="setupExampleData" class="btn btn-outline-primary">
-                    <i class="fas fa-magic me-2"></i>Load Example Data
-                </button>
+                <div class="tab-content" id="financeTabContent">
+                    <!-- Overview Tab -->
+                    <div class="tab-pane fade show active" id="overview" role="tabpanel">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="card bg-primary text-white">
+                                    <div class="card-body text-center">
+                                        <h5 class="card-title">Total Balance</h5>
+                                        <h2 class="mb-0" id="totalBalance">$0.00</h2>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-success text-white">
+                                    <div class="card-body text-center">
+                                        <h5 class="card-title">Accounts</h5>
+                                        <h2 class="mb-0" id="accountCount">0</h2>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-info text-white">
+                                    <div class="card-body text-center">
+                                        <h5 class="card-title">Recent Transactions</h5>
+                                        <h2 class="mb-0" id="transactionCount">0</h2>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="mb-0"><i class="fas fa-database me-2"></i>Quick Setup</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <p class="mb-3">Need some example data to get started?</p>
+                                        <button id="setupExampleData" class="btn btn-outline-primary">
+                                            <i class="fas fa-magic me-2"></i>Load Example Data
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Accounts Tab -->
+                    <div class="tab-pane fade" id="accounts" role="tabpanel">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="mb-0"><i class="fas fa-university me-2"></i>Add/Update Account</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <form id="accountForm">
+                                            <div class="mb-3">
+                                                <label for="accountName" class="form-label">Account Name</label>
+                                                <input type="text" class="form-control" id="accountName" placeholder="e.g., SF_Checking, Cuna">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="accountBalance" class="form-label">Current Balance</label>
+                                                <input type="number" step="0.01" class="form-control" id="accountBalance" placeholder="0.00">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="accountNotes" class="form-label">Notes</label>
+                                                <textarea class="form-control" id="accountNotes" rows="2" placeholder="Optional notes"></textarea>
+                                            </div>
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="fas fa-save me-2"></i>Update Balance
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="mb-0"><i class="fas fa-university me-2"></i>Your Accounts</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="accountsList" class="list-group">
+                                            <!-- Accounts will be loaded here -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Transactions Tab -->
+                    <div class="tab-pane fade" id="transactions" role="tabpanel">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="mb-0"><i class="fas fa-exchange-alt me-2"></i>Add Transaction</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <form id="transactionForm">
+                                            <div class="mb-3">
+                                                <label for="transactionAccount" class="form-label">Account</label>
+                                                <select class="form-control" id="transactionAccount" required>
+                                                    <option value="">Select Account</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="transactionCategory" class="form-label">Category</label>
+                                                <select class="form-control" id="transactionCategory" required>
+                                                    <option value="">Select Category</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="transactionAmount" class="form-label">Amount</label>
+                                                <input type="number" step="0.01" class="form-control" id="transactionAmount" placeholder="0.00" required>
+                                                <div class="form-text">Use positive for income, negative for expenses</div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="transactionDescription" class="form-label">Description</label>
+                                                <input type="text" class="form-control" id="transactionDescription" placeholder="Transaction description">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="transactionNotes" class="form-label">Notes</label>
+                                                <textarea class="form-control" id="transactionNotes" rows="2" placeholder="Optional notes"></textarea>
+                                            </div>
+                                            <button type="submit" class="btn btn-success">
+                                                <i class="fas fa-plus me-2"></i>Add Transaction
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="mb-0"><i class="fas fa-list me-2"></i>Recent Transactions</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="transactionsList">
+                                            <!-- Transactions will be loaded here -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Budget Tab -->
+                    <div class="tab-pane fade" id="budget" role="tabpanel">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Budget Setup</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <form id="budgetForm">
+                                            <div class="mb-3">
+                                                <label for="budgetCategory" class="form-label">Category</label>
+                                                <select class="form-control" id="budgetCategory" required>
+                                                    <option value="">Select Category</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="budgetAmount" class="form-label">Monthly Budget</label>
+                                                <input type="number" step="0.01" class="form-control" id="budgetAmount" placeholder="0.00" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="budgetNotes" class="form-label">Notes</label>
+                                                <textarea class="form-control" id="budgetNotes" rows="2" placeholder="Optional notes"></textarea>
+                                            </div>
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="fas fa-save me-2"></i>Set Budget
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Budget Overview</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="budgetList">
+                                            <p class="text-muted">No budgets set yet.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recurring Tab -->
+                    <div class="tab-pane fade" id="recurring" role="tabpanel">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="mb-0"><i class="fas fa-redo me-2"></i>Add Recurring Transaction</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <form id="recurringForm">
+                                            <div class="mb-3">
+                                                <label for="recurringAccount" class="form-label">Account</label>
+                                                <select class="form-control" id="recurringAccount" required>
+                                                    <option value="">Select Account</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="recurringCategory" class="form-label">Category</label>
+                                                <select class="form-control" id="recurringCategory" required>
+                                                    <option value="">Select Category</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="recurringAmount" class="form-label">Amount</label>
+                                                <input type="number" step="0.01" class="form-control" id="recurringAmount" placeholder="0.00" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="recurringFrequency" class="form-label">Frequency</label>
+                                                <select class="form-control" id="recurringFrequency" required>
+                                                    <option value="">Select Frequency</option>
+                                                    <option value="weekly">Weekly</option>
+                                                    <option value="biweekly">Bi-weekly</option>
+                                                    <option value="monthly">Monthly</option>
+                                                    <option value="quarterly">Quarterly</option>
+                                                    <option value="yearly">Yearly</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="recurringDescription" class="form-label">Description</label>
+                                                <input type="text" class="form-control" id="recurringDescription" placeholder="Transaction description">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="recurringNotes" class="form-label">Notes</label>
+                                                <textarea class="form-control" id="recurringNotes" rows="2" placeholder="Optional notes"></textarea>
+                                            </div>
+                                            <button type="submit" class="btn btn-success">
+                                                <i class="fas fa-plus me-2"></i>Add Recurring
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="mb-0"><i class="fas fa-list me-2"></i>Recurring Transactions</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="recurringList">
+                                            <p class="text-muted">No recurring transactions set yet.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -159,6 +317,7 @@
 // Finance page JavaScript
 document.addEventListener('DOMContentLoaded', function() {
     loadFinancialData();
+    loadCategories();
     
     // Account form submission
     document.getElementById('accountForm').addEventListener('submit', function(e) {
@@ -170,6 +329,18 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('transactionForm').addEventListener('submit', function(e) {
         e.preventDefault();
         addTransaction();
+    });
+    
+    // Budget form submission
+    document.getElementById('budgetForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        setBudget();
+    });
+    
+    // Recurring form submission
+    document.getElementById('recurringForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        addRecurringTransaction();
     });
     
     // Setup example data
@@ -200,36 +371,90 @@ async function loadFinancialData() {
     }
 }
 
+async function loadCategories() {
+    try {
+        const response = await fetch('/finance/categories');
+        const categories = await response.json();
+        
+        // Populate category dropdowns
+        populateCategoryDropdowns(categories);
+        
+    } catch (error) {
+        console.error('Error loading categories:', error);
+        showAlert('Error loading categories', 'danger');
+    }
+}
+
+function populateCategoryDropdowns(categories) {
+    const categoryDropdowns = [
+        'transactionCategory',
+        'budgetCategory', 
+        'recurringCategory'
+    ];
+    
+    categoryDropdowns.forEach(dropdownId => {
+        const dropdown = document.getElementById(dropdownId);
+        if (dropdown) {
+            dropdown.innerHTML = '<option value="">Select Category</option>';
+            
+            categories.forEach(group => {
+                const optgroup = document.createElement('optgroup');
+                optgroup.label = group.category_group;
+                
+                group.subcategories.forEach(subcategory => {
+                    const option = document.createElement('option');
+                    option.value = subcategory;
+                    option.textContent = subcategory;
+                    optgroup.appendChild(option);
+                });
+                
+                dropdown.appendChild(optgroup);
+            });
+        }
+    });
+}
+
 function loadAccounts(accounts) {
     const accountsList = document.getElementById('accountsList');
     const transactionAccount = document.getElementById('transactionAccount');
+    const recurringAccount = document.getElementById('recurringAccount');
     
-    accountsList.innerHTML = '';
-    transactionAccount.innerHTML = '<option value="">Select Account</option>';
+    // Clear and populate accounts list
+    if (accountsList) {
+        accountsList.innerHTML = '';
+        accounts.forEach(account => {
+            const accountItem = document.createElement('div');
+            accountItem.className = 'list-group-item d-flex justify-content-between align-items-center';
+            accountItem.innerHTML = `
+                <div>
+                    <strong>${account.account_name}</strong>
+                    <br><small class="text-muted">${account.institution}</small>
+                </div>
+                <span class="badge bg-primary rounded-pill">$${account.balance.toFixed(2)}</span>
+            `;
+            accountsList.appendChild(accountItem);
+        });
+    }
     
-    accounts.forEach(account => {
-        // Add to accounts list
-        const accountItem = document.createElement('div');
-        accountItem.className = 'list-group-item d-flex justify-content-between align-items-center';
-        accountItem.innerHTML = `
-            <div>
-                <strong>${account.account_name}</strong>
-                <br><small class="text-muted">${account.institution}</small>
-            </div>
-            <span class="badge bg-primary rounded-pill">$${account.balance.toFixed(2)}</span>
-        `;
-        accountsList.appendChild(accountItem);
-        
-        // Add to transaction form dropdown
-        const option = document.createElement('option');
-        option.value = account.account_name;
-        option.textContent = account.account_name;
-        transactionAccount.appendChild(option);
+    // Populate account dropdowns
+    const accountDropdowns = [transactionAccount, recurringAccount];
+    accountDropdowns.forEach(dropdown => {
+        if (dropdown) {
+            dropdown.innerHTML = '<option value="">Select Account</option>';
+            accounts.forEach(account => {
+                const option = document.createElement('option');
+                option.value = account.account_name;
+                option.textContent = account.account_name;
+                dropdown.appendChild(option);
+            });
+        }
     });
 }
 
 function loadTransactions(transactions) {
     const transactionsList = document.getElementById('transactionsList');
+    if (!transactionsList) return;
+    
     transactionsList.innerHTML = '';
     
     if (transactions.length === 0) {
@@ -322,6 +547,49 @@ async function addTransaction() {
     } catch (error) {
         console.error('Error adding transaction:', error);
         showAlert('Error adding transaction', 'danger');
+    }
+}
+
+async function setBudget() {
+    const category = document.getElementById('budgetCategory').value;
+    const amount = parseFloat(document.getElementById('budgetAmount').value);
+    const notes = document.getElementById('budgetNotes').value;
+    
+    if (!category || isNaN(amount)) {
+        showAlert('Please fill in all required fields', 'warning');
+        return;
+    }
+    
+    try {
+        // TODO: Implement budget API endpoint
+        showAlert('Budget feature coming soon!', 'info');
+        document.getElementById('budgetForm').reset();
+    } catch (error) {
+        console.error('Error setting budget:', error);
+        showAlert('Error setting budget', 'danger');
+    }
+}
+
+async function addRecurringTransaction() {
+    const accountName = document.getElementById('recurringAccount').value;
+    const category = document.getElementById('recurringCategory').value;
+    const amount = parseFloat(document.getElementById('recurringAmount').value);
+    const frequency = document.getElementById('recurringFrequency').value;
+    const description = document.getElementById('recurringDescription').value;
+    const notes = document.getElementById('recurringNotes').value;
+    
+    if (!accountName || !category || isNaN(amount) || !frequency) {
+        showAlert('Please fill in all required fields', 'warning');
+        return;
+    }
+    
+    try {
+        // TODO: Implement recurring transaction API endpoint
+        showAlert('Recurring transactions feature coming soon!', 'info');
+        document.getElementById('recurringForm').reset();
+    } catch (error) {
+        console.error('Error adding recurring transaction:', error);
+        showAlert('Error adding recurring transaction', 'danger');
     }
 }
 
