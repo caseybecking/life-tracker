@@ -1,0 +1,364 @@
+{% extends "base.html" %}
+
+{% block title %}Life Tracker - Finance{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-dollar-sign text-primary me-2"></i>Financial Tracking
+        </h1>
+    </div>
+</div>
+
+<!-- Financial Summary -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <h5 class="card-title">Total Balance</h5>
+                <h2 class="mb-0" id="totalBalance">$0.00</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <h5 class="card-title">Accounts</h5>
+                <h2 class="mb-0" id="accountCount">0</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <h5 class="card-title">Recent Transactions</h5>
+                <h2 class="mb-0" id="transactionCount">0</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Account Management -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-university me-2"></i>Account Management</h5>
+            </div>
+            <div class="card-body">
+                <form id="accountForm">
+                    <div class="mb-3">
+                        <label for="accountName" class="form-label">Account Name</label>
+                        <input type="text" class="form-control" id="accountName" placeholder="e.g., SF_Checking, Cuna">
+                    </div>
+                    <div class="mb-3">
+                        <label for="accountBalance" class="form-label">Current Balance</label>
+                        <input type="number" step="0.01" class="form-control" id="accountBalance" placeholder="0.00">
+                    </div>
+                    <div class="mb-3">
+                        <label for="accountNotes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="accountNotes" rows="2" placeholder="Optional notes"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Update Balance
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-exchange-alt me-2"></i>Add Transaction</h5>
+            </div>
+            <div class="card-body">
+                <form id="transactionForm">
+                    <div class="mb-3">
+                        <label for="transactionAccount" class="form-label">Account</label>
+                        <select class="form-control" id="transactionAccount" required>
+                            <option value="">Select Account</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="transactionCategory" class="form-label">Category</label>
+                        <input type="text" class="form-control" id="transactionCategory" placeholder="e.g., Income, Food, Gas" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="transactionAmount" class="form-label">Amount</label>
+                        <input type="number" step="0.01" class="form-control" id="transactionAmount" placeholder="0.00" required>
+                        <div class="form-text">Use positive for income, negative for expenses</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="transactionDescription" class="form-label">Description</label>
+                        <input type="text" class="form-control" id="transactionDescription" placeholder="Transaction description">
+                    </div>
+                    <div class="mb-3">
+                        <label for="transactionNotes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="transactionNotes" rows="2" placeholder="Optional notes"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-plus me-2"></i>Add Transaction
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Accounts and Transactions -->
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-university me-2"></i>Accounts</h5>
+            </div>
+            <div class="card-body">
+                <div id="accountsList" class="list-group">
+                    <!-- Accounts will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-list me-2"></i>Recent Transactions</h5>
+            </div>
+            <div class="card-body">
+                <div id="transactionsList">
+                    <!-- Transactions will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Setup Example Data -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-database me-2"></i>Quick Setup</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-3">Need some example data to get started?</p>
+                <button id="setupExampleData" class="btn btn-outline-primary">
+                    <i class="fas fa-magic me-2"></i>Load Example Data
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Finance page JavaScript
+document.addEventListener('DOMContentLoaded', function() {
+    loadFinancialData();
+    
+    // Account form submission
+    document.getElementById('accountForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        updateAccountBalance();
+    });
+    
+    // Transaction form submission
+    document.getElementById('transactionForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        addTransaction();
+    });
+    
+    // Setup example data
+    document.getElementById('setupExampleData').addEventListener('click', function() {
+        setupExampleData();
+    });
+});
+
+async function loadFinancialData() {
+    try {
+        const response = await fetch('/finance/summary');
+        const data = await response.json();
+        
+        // Update summary cards
+        document.getElementById('totalBalance').textContent = `$${data.total_balance.toFixed(2)}`;
+        document.getElementById('accountCount').textContent = data.accounts.length;
+        document.getElementById('transactionCount').textContent = data.recent_transactions.length;
+        
+        // Load accounts
+        loadAccounts(data.accounts);
+        
+        // Load transactions
+        loadTransactions(data.recent_transactions);
+        
+    } catch (error) {
+        console.error('Error loading financial data:', error);
+        showAlert('Error loading financial data', 'danger');
+    }
+}
+
+function loadAccounts(accounts) {
+    const accountsList = document.getElementById('accountsList');
+    const transactionAccount = document.getElementById('transactionAccount');
+    
+    accountsList.innerHTML = '';
+    transactionAccount.innerHTML = '<option value="">Select Account</option>';
+    
+    accounts.forEach(account => {
+        // Add to accounts list
+        const accountItem = document.createElement('div');
+        accountItem.className = 'list-group-item d-flex justify-content-between align-items-center';
+        accountItem.innerHTML = `
+            <div>
+                <strong>${account.account_name}</strong>
+                <br><small class="text-muted">${account.institution}</small>
+            </div>
+            <span class="badge bg-primary rounded-pill">$${account.balance.toFixed(2)}</span>
+        `;
+        accountsList.appendChild(accountItem);
+        
+        // Add to transaction form dropdown
+        const option = document.createElement('option');
+        option.value = account.account_name;
+        option.textContent = account.account_name;
+        transactionAccount.appendChild(option);
+    });
+}
+
+function loadTransactions(transactions) {
+    const transactionsList = document.getElementById('transactionsList');
+    transactionsList.innerHTML = '';
+    
+    if (transactions.length === 0) {
+        transactionsList.innerHTML = '<p class="text-muted">No transactions yet.</p>';
+        return;
+    }
+    
+    transactions.forEach(transaction => {
+        const transactionItem = document.createElement('div');
+        transactionItem.className = 'border-bottom pb-2 mb-2';
+        const amountClass = transaction.amount >= 0 ? 'text-success' : 'text-danger';
+        const amountSign = transaction.amount >= 0 ? '+' : '';
+        
+        transactionItem.innerHTML = `
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <strong>${transaction.category}</strong>
+                    <br><small class="text-muted">${transaction.account} • ${new Date(transaction.date).toLocaleDateString()}</small>
+                </div>
+                <span class="${amountClass} fw-bold">${amountSign}$${Math.abs(transaction.amount).toFixed(2)}</span>
+            </div>
+            ${transaction.notes ? `<small class="text-muted">${transaction.notes}</small>` : ''}
+        `;
+        transactionsList.appendChild(transactionItem);
+    });
+}
+
+async function updateAccountBalance() {
+    const accountName = document.getElementById('accountName').value;
+    const balance = parseFloat(document.getElementById('accountBalance').value);
+    const notes = document.getElementById('accountNotes').value;
+    
+    if (!accountName || isNaN(balance)) {
+        showAlert('Please fill in all required fields', 'warning');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/finance/accounts/${encodeURIComponent(accountName)}/balance?balance=${balance}&notes=${encodeURIComponent(notes)}`, {
+            method: 'POST'
+        });
+        
+        if (response.ok) {
+            showAlert('Account balance updated successfully', 'success');
+            document.getElementById('accountForm').reset();
+            loadFinancialData();
+        } else {
+            throw new Error('Failed to update balance');
+        }
+    } catch (error) {
+        console.error('Error updating balance:', error);
+        showAlert('Error updating account balance', 'danger');
+    }
+}
+
+async function addTransaction() {
+    const accountName = document.getElementById('transactionAccount').value;
+    const category = document.getElementById('transactionCategory').value;
+    const amount = parseFloat(document.getElementById('transactionAmount').value);
+    const description = document.getElementById('transactionDescription').value;
+    const notes = document.getElementById('transactionNotes').value;
+    
+    if (!accountName || !category || isNaN(amount)) {
+        showAlert('Please fill in all required fields', 'warning');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/finance/transactions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                account_name: accountName,
+                category: category,
+                amount: amount,
+                description: description,
+                notes: notes
+            })
+        });
+        
+        if (response.ok) {
+            showAlert('Transaction added successfully', 'success');
+            document.getElementById('transactionForm').reset();
+            loadFinancialData();
+        } else {
+            throw new Error('Failed to add transaction');
+        }
+    } catch (error) {
+        console.error('Error adding transaction:', error);
+        showAlert('Error adding transaction', 'danger');
+    }
+}
+
+async function setupExampleData() {
+    try {
+        const response = await fetch('/finance/setup/example-data', {
+            method: 'POST'
+        });
+        
+        if (response.ok) {
+            showAlert('Example data loaded successfully', 'success');
+            loadFinancialData();
+        } else {
+            throw new Error('Failed to load example data');
+        }
+    } catch (error) {
+        console.error('Error loading example data:', error);
+        showAlert('Error loading example data', 'danger');
+    }
+}
+
+function showAlert(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.querySelector('main').insertBefore(alertDiv, document.querySelector('main').firstChild);
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+</script>
+{% endblock %} 

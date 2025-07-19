@@ -1,0 +1,359 @@
+{% extends "base.html" %}
+
+{% block title %}Life Tracker - Track Everything{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-tasks text-success me-2"></i>Track Everything
+        </h1>
+        <p class="lead">Use the flexible Entity-Attribute-Value model to track any type of data.</p>
+    </div>
+</div>
+
+<!-- Quick Track Form -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-plus me-2"></i>Quick Track Data</h5>
+            </div>
+            <div class="card-body">
+                <form id="trackForm">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label for="noun" class="form-label">Noun (Category)</label>
+                            <input type="text" class="form-control" id="noun" placeholder="e.g., Banking, Person, Home" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="attribute" class="form-label">Attribute</label>
+                            <input type="text" class="form-control" id="attribute" placeholder="e.g., SF_Checking, Casey, Pool" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="value" class="form-label">Value</label>
+                            <input type="text" class="form-control" id="value" placeholder="e.g., Balance, Weight, Chlorine" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="data" class="form-label">Data</label>
+                            <input type="text" class="form-control" id="data" placeholder="e.g., 11818.71, 165, 0.5" required>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-4">
+                            <label for="dataType" class="form-label">Data Type</label>
+                            <select class="form-control" id="dataType">
+                                <option value="string">String</option>
+                                <option value="number">Number</option>
+                                <option value="date">Date</option>
+                                <option value="boolean">Boolean</option>
+                            </select>
+                        </div>
+                        <div class="col-md-8">
+                            <label for="notes" class="form-label">Notes</label>
+                            <input type="text" class="form-control" id="notes" placeholder="Optional notes">
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save me-2"></i>Track Data
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- View Data -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-search me-2"></i>View Data</h5>
+            </div>
+            <div class="card-body">
+                <form id="viewForm">
+                    <div class="mb-3">
+                        <label for="viewNoun" class="form-label">Select Noun</label>
+                        <select class="form-control" id="viewNoun">
+                            <option value="">Choose a category...</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-eye me-2"></i>View Data
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-database me-2"></i>Quick Setup</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-3">Load example data to see how the tracking system works.</p>
+                <button id="setupExampleData" class="btn btn-outline-primary">
+                    <i class="fas fa-magic me-2"></i>Load Example Data
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Data Display -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-table me-2"></i>Tracked Data</h5>
+            </div>
+            <div class="card-body">
+                <div id="dataDisplay">
+                    <p class="text-muted text-center">Select a noun above to view tracked data.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Example Categories -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-lightbulb me-2"></i>Example Categories</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <h6><i class="fas fa-dollar-sign text-primary me-2"></i>Banking</h6>
+                        <ul class="list-unstyled small">
+                            <li>• SF_Checking → Balance → 11818.71</li>
+                            <li>• Cuna → Balance → 5000.00</li>
+                            <li>• Schools First → Name → Schools First</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4">
+                        <h6><i class="fas fa-home text-success me-2"></i>Home</h6>
+                        <ul class="list-unstyled small">
+                            <li>• Purifier → Clean → 1</li>
+                            <li>• Pool → Chlorine → 0.5</li>
+                            <li>• BBQ → Clean → 1</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4">
+                        <h6><i class="fas fa-user text-info me-2"></i>Person</h6>
+                        <ul class="list-unstyled small">
+                            <li>• Casey → Weight → 165</li>
+                            <li>• Casey → Height → 5'10"</li>
+                            <li>• Casey → Age → 30</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-car text-warning me-2"></i>Vehicle</h6>
+                        <ul class="list-unstyled small">
+                            <li>• 4-Runner → Fuel_Gallons → 16.516</li>
+                            <li>• 4-Runner → Miles → 125000</li>
+                            <li>• 4-Runner → Oil_Change → 2023-12-01</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-hockey-puck text-danger me-2"></i>Hockey</h6>
+                        <ul class="list-unstyled small">
+                            <li>• Main Squeeze → Score → 5-4</li>
+                            <li>• Main Squeeze → Game → 2022-11-28</li>
+                            <li>• Main Squeeze → Opponent → Sharks</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Track page JavaScript
+document.addEventListener('DOMContentLoaded', function() {
+    loadNouns();
+    
+    // Track form submission
+    document.getElementById('trackForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        trackData();
+    });
+    
+    // View form submission
+    document.getElementById('viewForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        viewData();
+    });
+    
+    // Setup example data
+    document.getElementById('setupExampleData').addEventListener('click', function() {
+        setupExampleData();
+    });
+});
+
+async function loadNouns() {
+    try {
+        const response = await fetch('/track/nouns');
+        const nouns = await response.json();
+        
+        const viewNoun = document.getElementById('viewNoun');
+        viewNoun.innerHTML = '<option value="">Choose a category...</option>';
+        
+        nouns.forEach(noun => {
+            const option = document.createElement('option');
+            option.value = noun.name;
+            option.textContent = noun.name;
+            viewNoun.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Error loading nouns:', error);
+    }
+}
+
+async function trackData() {
+    const noun = document.getElementById('noun').value;
+    const attribute = document.getElementById('attribute').value;
+    const value = document.getElementById('value').value;
+    const data = document.getElementById('data').value;
+    const dataType = document.getElementById('dataType').value;
+    const notes = document.getElementById('notes').value;
+    
+    if (!noun || !attribute || !value || !data) {
+        showAlert('Please fill in all required fields', 'warning');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/track/${encodeURIComponent(noun)}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                attribute: attribute,
+                value: value,
+                data: data,
+                data_type: dataType,
+                notes: notes
+            })
+        });
+        
+        if (response.ok) {
+            showAlert('Data tracked successfully', 'success');
+            document.getElementById('trackForm').reset();
+            loadNouns();
+        } else {
+            throw new Error('Failed to track data');
+        }
+    } catch (error) {
+        console.error('Error tracking data:', error);
+        showAlert('Error tracking data', 'danger');
+    }
+}
+
+async function viewData() {
+    const noun = document.getElementById('viewNoun').value;
+    
+    if (!noun) {
+        showAlert('Please select a noun to view', 'warning');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/track/${encodeURIComponent(noun)}`);
+        const data = await response.json();
+        
+        displayData(data);
+    } catch (error) {
+        console.error('Error loading data:', error);
+        showAlert('Error loading data', 'danger');
+    }
+}
+
+function displayData(data) {
+    const dataDisplay = document.getElementById('dataDisplay');
+    
+    if (!data || !data.attributes || Object.keys(data.attributes).length === 0) {
+        dataDisplay.innerHTML = '<p class="text-muted text-center">No data found for this category.</p>';
+        return;
+    }
+    
+    let html = `<h6>${data.noun.name}</h6>`;
+    
+    Object.entries(data.attributes).forEach(([attrName, attrData]) => {
+        html += `<div class="mb-3"><strong>${attrName}</strong>`;
+        
+        Object.entries(attrData.values).forEach(([valueName, valueData]) => {
+            html += `<div class="ms-3 mb-2">`;
+            html += `<small class="text-muted">${valueName}:</small>`;
+            
+            if (valueData.data && valueData.data.length > 0) {
+                html += `<ul class="list-unstyled ms-3">`;
+                valueData.data.forEach(item => {
+                    const date = new Date(item.date_recorded).toLocaleDateString();
+                    html += `<li><code>${item.data_value}</code> <small class="text-muted">(${date})</small>`;
+                    if (item.notes) {
+                        html += `<br><small class="text-muted">${item.notes}</small>`;
+                    }
+                    html += `</li>`;
+                });
+                html += `</ul>`;
+            } else {
+                html += `<br><small class="text-muted">No data recorded</small>`;
+            }
+            html += `</div>`;
+        });
+        
+        html += `</div>`;
+    });
+    
+    dataDisplay.innerHTML = html;
+}
+
+async function setupExampleData() {
+    try {
+        const response = await fetch('/track/setup/example-data', {
+            method: 'POST'
+        });
+        
+        if (response.ok) {
+            showAlert('Example data loaded successfully', 'success');
+            loadNouns();
+        } else {
+            throw new Error('Failed to load example data');
+        }
+    } catch (error) {
+        console.error('Error loading example data:', error);
+        showAlert('Error loading example data', 'danger');
+    }
+}
+
+function showAlert(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.querySelector('main').insertBefore(alertDiv, document.querySelector('main').firstChild);
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+</script>
+{% endblock %} 

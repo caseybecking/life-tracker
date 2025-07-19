@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Life Tracker - Home{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="jumbotron bg-light p-5 rounded">
+            <h1 class="display-4 text-center mb-4">
+                <i class="fas fa-chart-line text-primary"></i> Life Tracker
+            </h1>
+            <p class="lead text-center mb-4">
+                Track everything that matters in your life - finances, health, home, and more.
+            </p>
+            <div class="text-center">
+                <a href="/finance" class="btn btn-primary btn-lg me-3">
+                    <i class="fas fa-dollar-sign me-2"></i>Track Finances
+                </a>
+                <a href="/track" class="btn btn-success btn-lg">
+                    <i class="fas fa-tasks me-2"></i>Track Everything
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-dollar-sign fa-3x text-primary mb-3"></i>
+                <h5 class="card-title">Financial Tracking</h5>
+                <p class="card-text">Track bank accounts, transactions, balances, and financial goals.</p>
+                <a href="/finance" class="btn btn-outline-primary">Get Started</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-home fa-3x text-success mb-3"></i>
+                <h5 class="card-title">Home Management</h5>
+                <p class="card-text">Track home maintenance, pool care, BBQ cleaning, and more.</p>
+                <a href="/track" class="btn btn-outline-success">Track Home</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-user fa-3x text-info mb-3"></i>
+                <h5 class="card-title">Personal Data</h5>
+                <p class="card-text">Track weight, health metrics, personal information, and goals.</p>
+                <a href="/track" class="btn btn-outline-info">Track Personal</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-car me-2"></i>Vehicle Tracking</h5>
+            </div>
+            <div class="card-body">
+                <p>Track fuel consumption, mileage, maintenance, and vehicle expenses.</p>
+                <a href="/track" class="btn btn-sm btn-outline-secondary">Track Vehicle</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-hockey-puck me-2"></i>Activities</h5>
+            </div>
+            <div class="card-body">
+                <p>Track sports, games, scores, dates, and recreational activities.</p>
+                <a href="/track" class="btn btn-sm btn-outline-secondary">Track Activities</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="alert alert-info">
+            <h6><i class="fas fa-info-circle me-2"></i>Flexible Data Model</h6>
+            <p class="mb-0">
+                Life Tracker uses an Entity-Attribute-Value (EAV) model that allows you to track any type of data 
+                without schema changes. Create custom categories and track anything that matters to you.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %} 
