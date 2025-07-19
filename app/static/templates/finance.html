@@ -120,6 +120,38 @@
                                         </form>
                                     </div>
                                 </div>
+                                
+                                <!-- CSV Import/Export Section -->
+                                <div class="card mt-3">
+                                    <div class="card-header">
+                                        <h5 class="mb-0"><i class="fas fa-file-csv me-2"></i>CSV Import/Export</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <h6>Export</h6>
+                                                <button class="btn btn-outline-success btn-sm mb-2" onclick="downloadSampleCSV()">
+                                                    <i class="fas fa-download me-1"></i>Download Sample
+                                                </button>
+                                                <br>
+                                                <button class="btn btn-outline-primary btn-sm" onclick="exportAccountsCSV()">
+                                                    <i class="fas fa-upload me-1"></i>Export Accounts
+                                                </button>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <h6>Import</h6>
+                                                <form id="csvImportForm" enctype="multipart/form-data">
+                                                    <div class="mb-2">
+                                                        <input type="file" class="form-control form-control-sm" id="csvFile" accept=".csv" required>
+                                                    </div>
+                                                    <button type="submit" class="btn btn-outline-info btn-sm">
+                                                        <i class="fas fa-upload me-1"></i>Import CSV
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="card">
@@ -428,11 +460,112 @@ document.addEventListener('DOMContentLoaded', function() {
         addRecurringTransaction();
     });
     
+    // CSV import form submission
+    document.getElementById('csvImportForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        importAccountsCSV();
+    });
+    
     // Setup example data
     document.getElementById('setupExampleData').addEventListener('click', function() {
         setupExampleData();
     });
 });
+
+// CSV Import/Export functions
+async function downloadSampleCSV() {
+    try {
+        const response = await fetch('/finance/accounts/export/sample');
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'accounts_sample_template.csv';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            showAlert('Sample CSV downloaded successfully', 'success');
+        } else {
+            throw new Error('Failed to download sample CSV');
+        }
+    } catch (error) {
+        console.error('Error downloading sample CSV:', error);
+        showAlert('Error downloading sample CSV', 'danger');
+    }
+}
+
+async function exportAccountsCSV() {
+    try {
+        const response = await fetch('/finance/accounts/export/csv');
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `accounts_export_${new Date().toISOString().slice(0, 10)}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            showAlert('Accounts exported successfully', 'success');
+        } else {
+            throw new Error('Failed to export accounts');
+        }
+    } catch (error) {
+        console.error('Error exporting accounts:', error);
+        showAlert('Error exporting accounts', 'danger');
+    }
+}
+
+async function importAccountsCSV() {
+    const fileInput = document.getElementById('csvFile');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        showAlert('Please select a CSV file', 'warning');
+        return;
+    }
+    
+    if (!file.name.endsWith('.csv')) {
+        showAlert('Please select a valid CSV file', 'warning');
+        return;
+    }
+    
+    try {
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const response = await fetch('/finance/accounts/import/csv', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            
+            let message = `CSV import completed! Imported ${result.imported_accounts} accounts.`;
+            if (result.errors && result.errors.length > 0) {
+                message += `\n\nErrors:\n${result.errors.join('\n')}`;
+            }
+            
+            showAlert(message, result.errors && result.errors.length > 0 ? 'warning' : 'success');
+            
+            // Clear the file input
+            fileInput.value = '';
+            
+            // Refresh the accounts list
+            loadFinancialData();
+        } else {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || 'Failed to import CSV');
+        }
+    } catch (error) {
+        console.error('Error importing CSV:', error);
+        showAlert(`Error importing CSV: ${error.message}`, 'danger');
+    }
+}
 
 async function loadFinancialData() {
     try {

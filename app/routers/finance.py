@@ -1,7 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any
 from datetime import datetime
+import csv
+import io
+import tempfile
+import os
 from ..database import get_db
 from .. import crud, schemas
 
@@ -32,6 +37,151 @@ def update_account_balance(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update balance: {str(e)}"
+        )
+
+@router.get("/accounts/export/csv")
+def export_accounts_csv(db: Session = Depends(get_db)):
+    """Export all accounts to CSV format"""
+    try:
+        accounts = crud.get_financial_accounts(db)
+        
+        # Create CSV content
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        # Write header
+        writer.writerow(['Account Name', 'Balance', 'Institution', 'Account Type', 'Notes', 'Last Updated'])
+        
+        # Write data
+        for account in accounts:
+            writer.writerow([
+                account['account_name'],
+                account['balance'],
+                account.get('institution', ''),
+                account.get('account_type', ''),
+                account.get('notes', ''),
+                account.get('last_updated', '').strftime('%Y-%m-%d %H:%M:%S') if account.get('last_updated') else ''
+            ])
+        
+        # Create temporary file
+        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.csv') as tmp_file:
+            tmp_file.write(output.getvalue())
+            tmp_file_path = tmp_file.name
+        
+        return FileResponse(
+            tmp_file_path,
+            media_type='text/csv',
+            filename=f'accounts_export_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to export accounts: {str(e)}"
+        )
+
+@router.get("/accounts/export/sample")
+def download_sample_csv():
+    """Download a sample CSV template for account import"""
+    try:
+        # Create sample CSV content
+        sample_data = [
+            ['Account Name', 'Balance', 'Institution', 'Account Type', 'Notes'],
+            ['SF_Checking', '11818.71', 'Bank of America', 'checking', 'Primary checking account'],
+            ['Cuna', '5000.00', 'Credit Union', 'savings', 'Emergency fund'],
+            ['Credit_Card', '-1250.50', 'Chase', 'credit', 'Main credit card'],
+            ['Investment_401k', '45000.00', 'Fidelity', 'investment', 'Retirement account'],
+            ['Car_Loan', '-15000.00', 'Auto Finance', 'loan', 'Vehicle loan']
+        ]
+        
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerows(sample_data)
+        
+        # Create temporary file
+        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.csv') as tmp_file:
+            tmp_file.write(output.getvalue())
+            tmp_file_path = tmp_file.name
+        
+        return FileResponse(
+            tmp_file_path,
+            media_type='text/csv',
+            filename='accounts_sample_template.csv'
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create sample CSV: {str(e)}"
+        )
+
+@router.post("/accounts/import/csv")
+async def import_accounts_csv(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    """Import accounts from CSV file"""
+    try:
+        # Validate file type
+        if not file.filename.endswith('.csv'):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="File must be a CSV file"
+            )
+        
+        # Read CSV content
+        content = await file.read()
+        csv_text = content.decode('utf-8')
+        
+        # Parse CSV
+        csv_reader = csv.DictReader(io.StringIO(csv_text))
+        
+        imported_accounts = []
+        errors = []
+        
+        for row_num, row in enumerate(csv_reader, start=2):  # Start at 2 because row 1 is header
+            try:
+                # Validate required fields
+                if not row.get('Account Name'):
+                    errors.append(f"Row {row_num}: Account Name is required")
+                    continue
+                
+                # Parse balance
+                try:
+                    balance = float(row.get('Balance', 0))
+                except ValueError:
+                    errors.append(f"Row {row_num}: Invalid balance format")
+                    continue
+                
+                # Update account
+                notes = f"Imported from CSV - {row.get('Notes', '')}"
+                result = crud.update_account_balance(
+                    db, 
+                    row['Account Name'], 
+                    balance, 
+                    notes
+                )
+                
+                imported_accounts.append({
+                    'account_name': row['Account Name'],
+                    'balance': balance,
+                    'institution': row.get('Institution', ''),
+                    'account_type': row.get('Account Type', ''),
+                    'notes': row.get('Notes', '')
+                })
+                
+            except Exception as e:
+                errors.append(f"Row {row_num}: {str(e)}")
+        
+        return {
+            "message": "CSV import completed",
+            "imported_accounts": len(imported_accounts),
+            "accounts": imported_accounts,
+            "errors": errors
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to import CSV: {str(e)}"
         )
 
 @router.get("/transactions", response_model=List[Dict[str, Any]])
