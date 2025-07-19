@@ -123,8 +123,11 @@
                             </div>
                             <div class="col-md-6">
                                 <div class="card">
-                                    <div class="card-header">
+                                    <div class="card-header d-flex justify-content-between align-items-center">
                                         <h5 class="mb-0"><i class="fas fa-university me-2"></i>Your Accounts</h5>
+                                        <button class="btn btn-sm btn-outline-primary" onclick="refreshAccounts()">
+                                            <i class="fas fa-sync-alt"></i>
+                                        </button>
                                     </div>
                                     <div class="card-body">
                                         <div id="accountsList" class="list-group">
@@ -310,6 +313,88 @@
         </div>
     </div>
 </div>
+
+<!-- Edit Account Modal -->
+<div class="modal fade" id="editAccountModal" tabindex="-1" aria-labelledby="editAccountModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editAccountModalLabel">
+                    <i class="fas fa-edit me-2"></i>Edit Account
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editAccountForm">
+                    <input type="hidden" id="editAccountId">
+                    <div class="mb-3">
+                        <label for="editAccountName" class="form-label">Account Name</label>
+                        <input type="text" class="form-control" id="editAccountName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editAccountBalance" class="form-label">Current Balance</label>
+                        <input type="number" step="0.01" class="form-control" id="editAccountBalance" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editAccountInstitution" class="form-label">Institution</label>
+                        <input type="text" class="form-control" id="editAccountInstitution" placeholder="e.g., Bank of America">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editAccountType" class="form-label">Account Type</label>
+                        <select class="form-control" id="editAccountType">
+                            <option value="checking">Checking</option>
+                            <option value="savings">Savings</option>
+                            <option value="credit">Credit Card</option>
+                            <option value="investment">Investment</option>
+                            <option value="loan">Loan</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editAccountNotes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="editAccountNotes" rows="3" placeholder="Optional notes about this account"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="deleteAccount()">Delete Account</button>
+                <button type="button" class="btn btn-primary" onclick="saveAccountChanges()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Edit Modal -->
+<div class="modal fade" id="quickEditModal" tabindex="-1" aria-labelledby="quickEditModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="quickEditModalLabel">
+                    <i class="fas fa-edit me-2"></i>Quick Edit Balance
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="quickEditForm">
+                    <input type="hidden" id="quickEditAccountName">
+                    <div class="mb-3">
+                        <label for="quickEditBalance" class="form-label">New Balance</label>
+                        <input type="number" step="0.01" class="form-control" id="quickEditBalance" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="quickEditNotes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="quickEditNotes" rows="2" placeholder="Reason for balance change"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveQuickEdit()">Update Balance</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -426,11 +511,28 @@ function loadAccounts(accounts) {
             const accountItem = document.createElement('div');
             accountItem.className = 'list-group-item d-flex justify-content-between align-items-center';
             accountItem.innerHTML = `
-                <div>
-                    <strong>${account.account_name}</strong>
-                    <br><small class="text-muted">${account.institution}</small>
+                <div class="flex-grow-1">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <strong>${account.account_name}</strong>
+                            <br><small class="text-muted">${account.institution || 'Unknown Institution'}</small>
+                            ${account.last_updated ? `<br><small class="text-muted">Updated: ${new Date(account.last_updated).toLocaleDateString()}</small>` : ''}
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-primary rounded-pill fs-6">$${account.balance.toFixed(2)}</span>
+                        </div>
+                    </div>
                 </div>
-                <span class="badge bg-primary rounded-pill">$${account.balance.toFixed(2)}</span>
+                <div class="ms-3">
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="quickEditAccount('${account.account_name}', ${account.balance})" title="Quick Edit Balance">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="editAccount('${account.account_name}', ${account.balance})" title="Edit Account Details">
+                            <i class="fas fa-cog"></i>
+                        </button>
+                    </div>
+                </div>
             `;
             accountsList.appendChild(accountItem);
         });
@@ -627,6 +729,137 @@ function showAlert(message, type) {
             alertDiv.remove();
         }
     }, 5000);
+}
+
+// Account editing functions
+function editAccount(accountName, currentBalance) {
+    // Populate the edit modal
+    document.getElementById('editAccountId').value = accountName;
+    document.getElementById('editAccountName').value = accountName;
+    document.getElementById('editAccountBalance').value = currentBalance;
+    document.getElementById('editAccountInstitution').value = 'Banking'; // Default for now
+    document.getElementById('editAccountType').value = 'checking'; // Default for now
+    document.getElementById('editAccountNotes').value = '';
+    
+    // Show the modal
+    const modal = new bootstrap.Modal(document.getElementById('editAccountModal'));
+    modal.show();
+}
+
+function quickEditAccount(accountName, currentBalance) {
+    // Populate the quick edit modal
+    document.getElementById('quickEditAccountName').value = accountName;
+    document.getElementById('quickEditBalance').value = currentBalance;
+    document.getElementById('quickEditNotes').value = '';
+    
+    // Show the modal
+    const modal = new bootstrap.Modal(document.getElementById('quickEditModal'));
+    modal.show();
+}
+
+async function saveAccountChanges() {
+    const accountName = document.getElementById('editAccountName').value;
+    const newBalance = parseFloat(document.getElementById('editAccountBalance').value);
+    const institution = document.getElementById('editAccountInstitution').value;
+    const accountType = document.getElementById('editAccountType').value;
+    const notes = document.getElementById('editAccountNotes').value;
+    
+    if (!accountName || isNaN(newBalance)) {
+        showAlert('Please fill in all required fields', 'warning');
+        return;
+    }
+    
+    try {
+        // Update the balance
+        const response = await fetch(`/finance/accounts/${encodeURIComponent(accountName)}/balance?balance=${newBalance}&notes=${encodeURIComponent(notes)}`, {
+            method: 'POST'
+        });
+        
+        if (response.ok) {
+            showAlert('Account updated successfully', 'success');
+            
+            // Close the modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editAccountModal'));
+            modal.hide();
+            
+            // Refresh the accounts list
+            loadFinancialData();
+        } else {
+            throw new Error('Failed to update account');
+        }
+    } catch (error) {
+        console.error('Error updating account:', error);
+        showAlert('Error updating account', 'danger');
+    }
+}
+
+async function saveQuickEdit() {
+    const accountName = document.getElementById('quickEditAccountName').value;
+    const newBalance = parseFloat(document.getElementById('quickEditBalance').value);
+    const notes = document.getElementById('quickEditNotes').value;
+    
+    if (!accountName || isNaN(newBalance)) {
+        showAlert('Please fill in all required fields', 'warning');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/finance/accounts/${encodeURIComponent(accountName)}/balance?balance=${newBalance}&notes=${encodeURIComponent(notes)}`, {
+            method: 'POST'
+        });
+        
+        if (response.ok) {
+            showAlert('Account balance updated successfully', 'success');
+            
+            // Close the modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('quickEditModal'));
+            modal.hide();
+            
+            // Refresh the accounts list
+            loadFinancialData();
+        } else {
+            throw new Error('Failed to update balance');
+        }
+    } catch (error) {
+        console.error('Error updating balance:', error);
+        showAlert('Error updating account balance', 'danger');
+    }
+}
+
+async function deleteAccount() {
+    const accountName = document.getElementById('editAccountName').value;
+    
+    if (!accountName) {
+        showAlert('No account selected for deletion', 'warning');
+        return;
+    }
+    
+    if (!confirm(`Are you sure you want to delete the account "${accountName}"? This action cannot be undone.`)) {
+        return;
+    }
+    
+    try {
+        // TODO: Implement account deletion API endpoint
+        showAlert('Account deletion feature coming soon!', 'info');
+        
+        // Close the modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('editAccountModal'));
+        modal.hide();
+        
+    } catch (error) {
+        console.error('Error deleting account:', error);
+        showAlert('Error deleting account', 'danger');
+    }
+}
+
+async function refreshAccounts() {
+    try {
+        await loadFinancialData();
+        showAlert('Accounts refreshed successfully', 'success');
+    } catch (error) {
+        console.error('Error refreshing accounts:', error);
+        showAlert('Error refreshing accounts', 'danger');
+    }
 }
 </script>
 {% endblock %} 
