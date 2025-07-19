@@ -259,6 +259,99 @@ def get_financial_summary(db: Session) -> Dict[str, Any]:
         "recent_transactions": get_transactions(db, limit=20)
     }
 
+def get_networth_history(db: Session) -> Dict[str, Any]:
+    """Get net worth history over time"""
+    accounts = get_financial_accounts(db)
+    
+    # Get all balance history for each account
+    all_balance_data = {}
+    for account in accounts:
+        account_name = account['account_name']
+        balance_history = get_account_balance_history(db, account_name)
+        all_balance_data[account_name] = balance_history
+    
+    # Combine all balance data by date
+    networth_by_date = {}
+    
+    for account_name, balance_history in all_balance_data.items():
+        for entry in balance_history:
+            date_key = entry['date'].strftime('%Y-%m-%d')
+            if date_key not in networth_by_date:
+                networth_by_date[date_key] = {}
+            networth_by_date[date_key][account_name] = entry['balance']
+    
+    # Calculate net worth for each date
+    networth_history = []
+    for date_str in sorted(networth_by_date.keys()):
+        total_networth = sum(networth_by_date[date_str].values())
+        networth_history.append({
+            'date': date_str,
+            'networth': total_networth,
+            'accounts': networth_by_date[date_str]
+        })
+    
+    return {
+        'networth_history': networth_history,
+        'total_accounts': len(accounts),
+        'current_networth': get_total_balance(db)
+    }
+
+def get_spending_over_time(db: Session) -> Dict[str, Any]:
+    """Get spending data over time"""
+    # Get all transactions
+    all_transactions = get_transactions(db, limit=10000)
+    
+    # Group transactions by month
+    spending_by_month = {}
+    
+    for transaction in all_transactions:
+        if transaction['amount'] < 0:  # Only spending (negative amounts)
+            month_key = transaction['date'].strftime('%Y-%m')
+            if month_key not in spending_by_month:
+                spending_by_month[month_key] = {
+                    'total_spending': 0,
+                    'transactions': 0,
+                    'categories': {}
+                }
+            
+            spending_by_month[month_key]['total_spending'] += abs(transaction['amount'])
+            spending_by_month[month_key]['transactions'] += 1
+            
+            # Track spending by category
+            category = transaction['category']
+            if category not in spending_by_month[month_key]['categories']:
+                spending_by_month[month_key]['categories'][category] = 0
+            spending_by_month[month_key]['categories'][category] += abs(transaction['amount'])
+    
+    # Convert to sorted list
+    spending_history = []
+    for month in sorted(spending_by_month.keys()):
+        spending_history.append({
+            'month': month,
+            'total_spending': spending_by_month[month]['total_spending'],
+            'transactions': spending_by_month[month]['transactions'],
+            'categories': spending_by_month[month]['categories']
+        })
+    
+    return {
+        'spending_history': spending_history,
+        'total_spending': sum(entry['total_spending'] for entry in spending_history)
+    }
+
+def get_recent_transactions(db: Session, limit: int = 5) -> List[Dict[str, Any]]:
+    """Get most recent transactions across all accounts"""
+    all_transactions = []
+    
+    # Get transactions from all accounts
+    accounts = get_financial_accounts(db)
+    for account in accounts:
+        account_transactions = get_account_transactions(db, account['account_name'], limit=100)
+        all_transactions.extend(account_transactions)
+    
+    # Sort by date descending and return top N
+    all_transactions.sort(key=lambda x: x['date'], reverse=True)
+    return all_transactions[:limit]
+
 def get_account_transactions(db: Session, account_name: str, limit: int = 100) -> List[Dict[str, Any]]:
     """Get transactions for a specific account including opening balance"""
     banking_noun = get_noun_by_name(db, "Banking")

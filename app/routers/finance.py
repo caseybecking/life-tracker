@@ -17,6 +17,42 @@ def get_financial_summary(db: Session = Depends(get_db)):
     """Get comprehensive financial summary including total balance, accounts, and recent transactions"""
     return crud.get_financial_summary(db)
 
+@router.get("/networth", response_model=Dict[str, Any])
+def get_networth_data(db: Session = Depends(get_db)):
+    """Get net worth data over time"""
+    try:
+        networth_data = crud.get_networth_history(db)
+        return networth_data
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get net worth data: {str(e)}"
+        )
+
+@router.get("/spending", response_model=Dict[str, Any])
+def get_spending_data(db: Session = Depends(get_db)):
+    """Get spending data over time"""
+    try:
+        spending_data = crud.get_spending_over_time(db)
+        return spending_data
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get spending data: {str(e)}"
+        )
+
+@router.get("/recent-transactions", response_model=List[Dict[str, Any]])
+def get_recent_transactions(limit: int = 5, db: Session = Depends(get_db)):
+    """Get most recent transactions across all accounts"""
+    try:
+        recent_transactions = crud.get_recent_transactions(db, limit)
+        return recent_transactions
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get recent transactions: {str(e)}"
+        )
+
 @router.get("/accounts", response_model=List[Dict[str, Any]])
 def get_accounts(db: Session = Depends(get_db)):
     """Get all bank accounts with current balances"""

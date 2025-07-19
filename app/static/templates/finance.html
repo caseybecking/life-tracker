@@ -49,7 +49,7 @@
                     <!-- Overview Tab -->
                     <div class="tab-pane fade show active" id="overview" role="tabpanel">
                         <div class="row">
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <div class="card bg-primary text-white">
                                     <div class="card-body text-center">
                                         <h5 class="card-title">Total Balance</h5>
@@ -57,7 +57,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <div class="card bg-success text-white">
                                     <div class="card-body text-center">
                                         <h5 class="card-title">Accounts</h5>
@@ -65,11 +65,59 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <div class="card bg-info text-white">
                                     <div class="card-body text-center">
                                         <h5 class="card-title">Recent Transactions</h5>
                                         <h2 class="mb-0" id="transactionCount">0</h2>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-warning text-white">
+                                    <div class="card-body text-center">
+                                        <h5 class="card-title">Total Spending</h5>
+                                        <h2 class="mb-0" id="totalSpending">$0.00</h2>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Charts Row -->
+                        <div class="row mt-4">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Net Worth Over Time</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <canvas id="networthChart" width="400" height="200"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Spending Over Time</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <canvas id="spendingChart" width="400" height="200"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Recent Transactions Row -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="mb-0"><i class="fas fa-list me-2"></i>Top 5 Recent Transactions</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="recentTransactionsList">
+                                            <p class="text-muted">Loading recent transactions...</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -567,6 +615,8 @@ async function importAccountsCSV() {
     }
 }
 
+let networthChart, spendingChart;
+
 async function loadFinancialData() {
     try {
         const response = await fetch('/finance/summary');
@@ -583,10 +633,168 @@ async function loadFinancialData() {
         // Load transactions
         loadTransactions(data.recent_transactions);
         
+        // Load additional data
+        await loadNetworthData();
+        await loadSpendingData();
+        await loadRecentTransactions();
+        
     } catch (error) {
         console.error('Error loading financial data:', error);
         showAlert('Error loading financial data', 'danger');
     }
+}
+
+async function loadNetworthData() {
+    try {
+        const response = await fetch('/finance/networth');
+        const data = await response.json();
+        
+        createNetworthChart(data.networth_history);
+        
+    } catch (error) {
+        console.error('Error loading net worth data:', error);
+    }
+}
+
+async function loadSpendingData() {
+    try {
+        const response = await fetch('/finance/spending');
+        const data = await response.json();
+        
+        createSpendingChart(data.spending_history);
+        document.getElementById('totalSpending').textContent = `$${data.total_spending.toFixed(2)}`;
+        
+    } catch (error) {
+        console.error('Error loading spending data:', error);
+    }
+}
+
+async function loadRecentTransactions() {
+    try {
+        const response = await fetch('/finance/recent-transactions?limit=5');
+        const transactions = await response.json();
+        
+        const recentList = document.getElementById('recentTransactionsList');
+        recentList.innerHTML = '';
+        
+        if (transactions.length === 0) {
+            recentList.innerHTML = '<p class="text-muted">No recent transactions.</p>';
+            return;
+        }
+        
+        transactions.forEach(transaction => {
+            const transactionItem = document.createElement('div');
+            transactionItem.className = 'border-bottom pb-2 mb-2';
+            const amountClass = transaction.amount >= 0 ? 'text-success' : 'text-danger';
+            const amountSign = transaction.amount >= 0 ? '+' : '';
+            
+            transactionItem.innerHTML = `
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <strong>${transaction.category}</strong>
+                        <br><small class="text-muted">${transaction.account} • ${new Date(transaction.date).toLocaleDateString()}</small>
+                    </div>
+                    <span class="${amountClass} fw-bold">${amountSign}$${Math.abs(transaction.amount).toFixed(2)}</span>
+                </div>
+                ${transaction.notes ? `<small class="text-muted">${transaction.notes}</small>` : ''}
+            `;
+            recentList.appendChild(transactionItem);
+        });
+        
+    } catch (error) {
+        console.error('Error loading recent transactions:', error);
+    }
+}
+
+function createNetworthChart(networthHistory) {
+    const ctx = document.getElementById('networthChart').getContext('2d');
+    
+    // Destroy existing chart if it exists
+    if (networthChart) {
+        networthChart.destroy();
+    }
+    
+    const labels = networthHistory.map(item => item.date);
+    const data = networthHistory.map(item => item.networth);
+    
+    networthChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Net Worth',
+                data: data,
+                borderColor: 'rgb(75, 192, 192)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                tension: 0.1,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value.toLocaleString();
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function createSpendingChart(spendingHistory) {
+    const ctx = document.getElementById('spendingChart').getContext('2d');
+    
+    // Destroy existing chart if it exists
+    if (spendingChart) {
+        spendingChart.destroy();
+    }
+    
+    const labels = spendingHistory.map(item => item.month);
+    const data = spendingHistory.map(item => item.total_spending);
+    
+    spendingChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Monthly Spending',
+                data: data,
+                backgroundColor: 'rgba(255, 99, 132, 0.8)',
+                borderColor: 'rgb(255, 99, 132)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value.toLocaleString();
+                        }
+                    }
+                }
+            }
+        }
+    });
 }
 
 async function loadCategories() {
