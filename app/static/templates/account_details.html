@@ -313,7 +313,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 async function loadAccountDetails() {
     try {
-        const response = await fetch(`/finance/accounts/${encodeURIComponent(accountName)}/details`);
+        const response = await fetch(`/finance/api/accounts/${encodeURIComponent(accountName)}/details`);
         if (!response.ok) {
             throw new Error('Failed to load account details');
         }
@@ -471,7 +471,7 @@ async function refreshAccountData() {
 
 async function calculateBalance() {
     try {
-        const response = await fetch(`/finance/accounts/${encodeURIComponent(accountName)}/calculate-balance`, {
+        const response = await fetch(`/finance/api/accounts/${encodeURIComponent(accountName)}/calculate-balance`, {
             method: 'POST'
         });
         
@@ -587,7 +587,7 @@ async function saveTransactionChanges() {
     }
     
     try {
-        const response = await fetch(`/finance/transactions/${id}`, {
+        const response = await fetch(`/finance/api/transactions/${id}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
@@ -626,7 +626,7 @@ async function deleteTransaction() {
     }
     
     try {
-        const response = await fetch(`/finance/transactions/${id}`, {
+        const response = await fetch(`/finance/api/transactions/${id}`, {
             method: 'DELETE'
         });
         
