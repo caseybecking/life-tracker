@@ -239,7 +239,7 @@ async function loadRecentTransactions() {
                     </div>
                     <span class="${amountClass} fw-bold">${amountSign}$${Math.abs(transaction.amount).toFixed(2)}</span>
                 </div>
-                ${requiredIndicator}${transaction.description || transaction.notes ? `<small class="text-muted">${transaction.description || transaction.notes}</small>` : ''}
+                ${requiredIndicator}${transaction.description ? `<small class="text-muted">${transaction.description}</small>` : ''}
             `;
             recentList.appendChild(transactionItem);
         });

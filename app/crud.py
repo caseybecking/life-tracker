@@ -737,6 +737,18 @@ def get_account_transactions(db: Session, account_name: str, limit: int = 100) -
         for val in transaction_values:
             data_entries = get_data_by_value(db, val.id, limit)
             for data in data_entries:
+                # Parse metadata for old format
+                metadata = {}
+                required_spending = False
+                if data.notes:
+                    try:
+                        import json
+                        metadata = json.loads(data.notes)
+                        required_spending = metadata.get("required_spending", False)
+                    except:
+                        # Old format: notes is just description
+                        metadata = {"description": data.notes}
+                
                 transactions.append({
                     "id": data.id,
                     "account": account_name,
@@ -744,8 +756,8 @@ def get_account_transactions(db: Session, account_name: str, limit: int = 100) -
                     "amount": float(data.data_value),
                     "date": data.date_recorded,
                     "updated_at": data.updated_at,
-                    "description": data.notes,  # Map notes to description for frontend compatibility
-                    "notes": data.notes,
+                    "description": metadata.get("description", ""),
+                    "required_spending": required_spending,
                     "type": "transaction"
                 })
     
