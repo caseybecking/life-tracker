@@ -207,6 +207,15 @@
                         <label for="editModalTransactionNotes" class="form-label">Notes</label>
                         <textarea class="form-control" id="editModalTransactionNotes" rows="3"></textarea>
                     </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="editModalTransactionRequiredSpending">
+                            <label class="form-check-label" for="editModalTransactionRequiredSpending">
+                                <i class="fas fa-exclamation-triangle text-warning me-1"></i>Required Spending
+                            </label>
+                        </div>
+                        <small class="form-text text-muted">Check this for essential expenses like rent, utilities, insurance, etc.</small>
+                    </div>
                 </form>
             </div>
             <div class="modal-footer">
@@ -288,6 +297,12 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     }
                 }, 100);
+                
+                // Set required spending checkbox
+                const requiredSpendingCheckbox = document.getElementById('editModalTransactionRequiredSpending');
+                if (requiredSpendingCheckbox) {
+                    requiredSpendingCheckbox.checked = data.required_spending;
+                }
                 
                 // Clear the stored data
                 window.editTransactionData = null;
@@ -396,40 +411,44 @@ function createBalanceChart(balanceHistory) {
 
 function updateTransactionsTable(transactions) {
     const tbody = document.getElementById('transactionsTable');
-    tbody.innerHTML = '';
+    if (!tbody) return;
     
     if (transactions.length === 0) {
         tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No transactions found</td></tr>';
         return;
     }
     
+    tbody.innerHTML = '';
     transactions.forEach(transaction => {
         const row = document.createElement('tr');
         const amountClass = transaction.amount >= 0 ? 'text-success' : 'text-danger';
         const amountSign = transaction.amount >= 0 ? '+' : '';
         
-        // Special styling for opening balance
+        // Determine badge class based on category
         const isOpeningBalance = transaction.category === 'Opening Balance';
-        const rowClass = isOpeningBalance ? 'table-info' : '';
-        const categoryBadge = isOpeningBalance ? 'bg-info' : 'bg-secondary';
+        const categoryBadge = isOpeningBalance ? 'bg-primary' : 'bg-secondary';
         
-        row.className = rowClass;
+        // Add required spending indicator
+        const requiredIndicator = transaction.required_spending ? 
+            '<i class="fas fa-exclamation-triangle text-warning me-1" title="Required Spending"></i>' : '';
+        
         row.innerHTML = `
             <td>${new Date(transaction.date).toLocaleDateString()}
-                ${transaction.updated_at && new Date(transaction.updated_at) > new Date(transaction.date) ? 
-                    ` <small class="text-muted" title="Last updated: ${new Date(transaction.updated_at).toLocaleString()}">✏️</small>` : 
-                    ''}</td>
+                ${transaction.updated_at && new Date(transaction.updated_at) > new Date(transaction.date) ?
+                ` <small class="text-muted" title="Last updated: ${new Date(transaction.updated_at).toLocaleString()}">✏️</small>` :
+                ''}
+            </td>
             <td><span class="badge ${categoryBadge}">${transaction.category}</span></td>
-            <td>${transaction.description || '-'}</td>
+            <td>${requiredIndicator}${transaction.description || '-'}</td>
             <td class="${amountClass} fw-bold">${amountSign}$${Math.abs(transaction.amount).toFixed(2)}</td>
             <td>${transaction.notes || '-'}</td>
             <td>
                 ${isOpeningBalance ? 
-                    `<button type="button" class="btn btn-outline-info btn-sm" onclick="showBalanceUpdateInfo()" title="Update account balance instead">
+                    `<button type="button" class="btn btn-outline-info btn-sm" title="Opening balance - use account balance update to modify">
                         <i class="fas fa-info-circle"></i>
                     </button>` : 
                     `<div class="btn-group btn-group-sm" role="group">
-                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="editTransaction('${transaction.id}', '${transaction.account}', '${transaction.category}', ${transaction.amount}, '${(transaction.description || '').replace(/'/g, "\\'")}', '${(transaction.notes || '').replace(/'/g, "\\'")}', '${transaction.date}')" title="Edit Transaction">
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="editTransaction('${transaction.id}', '${transaction.account}', '${transaction.category}', ${transaction.amount}, '${(transaction.description || '').replace(/'/g, "\\'")}', '${(transaction.notes || '').replace(/'/g, "\\'")}', '${transaction.date}', ${transaction.required_spending})" title="Edit Transaction">
                             <i class="fas fa-edit"></i>
                         </button>
                     </div>`
@@ -492,7 +511,7 @@ function showAlert(message, type) {
 async function populateEditModalDropdowns() {
     try {
         // Load accounts for edit modal
-        const accountsResponse = await fetch('/finance/accounts');
+        const accountsResponse = await fetch('/finance/api/accounts');
         const accounts = await accountsResponse.json();
         
         const editAccountDropdown = document.getElementById('editModalTransactionAccount');
@@ -505,7 +524,7 @@ async function populateEditModalDropdowns() {
         });
         
         // Load categories for edit modal
-        const categoriesResponse = await fetch('/finance/categories');
+        const categoriesResponse = await fetch('/finance/api/categories');
         const categories = await categoriesResponse.json();
         
         const editCategoryDropdown = document.getElementById('editModalTransactionCategory');
@@ -528,11 +547,9 @@ async function populateEditModalDropdowns() {
     }
 }
 
-function editTransaction(id, account, category, amount, description, notes, date) {
+function editTransaction(id, account, category, amount, description, notes, date, requiredSpending = false) {
     // Check if this is an opening balance transaction
-    if (id.startsWith('balance_')) {
-        // Extract the real balance record ID
-        const realId = id.replace('balance_', '');
+    if (category === 'Opening Balance') {
         showAlert('Opening balance transactions cannot be edited directly. Use the account balance update feature instead.', 'info');
         return;
     }
@@ -543,9 +560,10 @@ function editTransaction(id, account, category, amount, description, notes, date
         account: account,
         category: category,
         amount: amount,
-        description: description,
-        notes: notes,
-        date: date
+        description: description || '',
+        notes: notes || '',
+        date: date,
+        required_spending: requiredSpending
     };
     
     // Show the modal
@@ -561,6 +579,7 @@ async function saveTransactionChanges() {
     const description = document.getElementById('editModalTransactionDescription').value;
     const notes = document.getElementById('editModalTransactionNotes').value;
     const date = document.getElementById('editModalTransactionDate').value;
+    const requiredSpending = document.getElementById('editModalTransactionRequiredSpending').checked;
     
     if (!accountName || !category || isNaN(amount) || !date) {
         showAlert('Please fill in all required fields', 'warning');
@@ -579,7 +598,8 @@ async function saveTransactionChanges() {
                 amount: amount,
                 description: description,
                 notes: notes,
-                date: date
+                date: date,
+                required_spending: requiredSpending ? 'true' : 'false'
             })
         });
         

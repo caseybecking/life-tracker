@@ -1,0 +1,459 @@
+{% extends "base.html" %}
+
+{% block title %}Finance Accounts - Life Tracker{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0"><i class="fas fa-university me-2"></i>Accounts</h1>
+            <p class="text-muted">Manage your financial accounts</p>
+        </div>
+        <div class="btn-group" role="group">
+            <a href="/finance/overview" class="btn btn-outline-primary">
+                <i class="fas fa-chart-line me-1"></i>Overview
+            </a>
+            <a href="/finance/transactions" class="btn btn-outline-primary">
+                <i class="fas fa-exchange-alt me-1"></i>Transactions
+            </a>
+            <a href="/finance/budget" class="btn btn-outline-primary">
+                <i class="fas fa-chart-pie me-1"></i>Budget
+            </a>
+            <a href="/finance/recurring" class="btn btn-outline-primary">
+                <i class="fas fa-redo me-1"></i>Recurring
+            </a>
+        </div>
+    </div>
+
+    <!-- Add Account Button -->
+    <div class="d-flex justify-content-end mb-3">
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAccountModal">
+            <i class="fas fa-plus me-1"></i>Add Account
+        </button>
+    </div>
+
+    <!-- Accounts Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-list me-2"></i>Your Accounts</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Account</th>
+                            <th>Institution</th>
+                            <th>Type</th>
+                            <th class="text-end">Balance</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="accountsTableBody">
+                        <tr>
+                            <td colspan="5" class="text-center text-muted">Loading accounts...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Account Modal -->
+<div class="modal fade" id="addAccountModal" tabindex="-1" aria-labelledby="addAccountModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addAccountModalLabel">
+                    <i class="fas fa-plus me-2"></i>Add New Account
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addAccountForm">
+                    <div class="mb-3">
+                        <label for="addAccountName" class="form-label">Account Name</label>
+                        <input type="text" class="form-control" id="addAccountName" placeholder="e.g., Main Checking" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="addAccountBalance" class="form-label">Current Balance</label>
+                        <input type="number" step="0.01" class="form-control" id="addAccountBalance" placeholder="0.00" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="addAccountInstitution" class="form-label">Institution</label>
+                        <input type="text" class="form-control" id="addAccountInstitution" placeholder="e.g., Bank of America">
+                    </div>
+                    <div class="mb-3">
+                        <label for="addAccountType" class="form-label">Account Type</label>
+                        <select class="form-control" id="addAccountType">
+                            <option value="checking">Checking</option>
+                            <option value="savings">Savings</option>
+                            <option value="credit">Credit Card</option>
+                            <option value="investment">Investment</option>
+                            <option value="loan">Loan</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="addAccountNotes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="addAccountNotes" rows="3" placeholder="Optional notes about this account"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="addAccount()">Add Account</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Account Modal -->
+<div class="modal fade" id="editAccountModal" tabindex="-1" aria-labelledby="editAccountModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editAccountModalLabel">
+                    <i class="fas fa-edit me-2"></i>Edit Account
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editAccountForm">
+                    <input type="hidden" id="editAccountId">
+                    <div class="mb-3">
+                        <label for="editAccountName" class="form-label">Account Name</label>
+                        <input type="text" class="form-control" id="editAccountName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editAccountBalance" class="form-label">Current Balance</label>
+                        <input type="number" step="0.01" class="form-control" id="editAccountBalance" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editAccountInstitution" class="form-label">Institution</label>
+                        <input type="text" class="form-control" id="editAccountInstitution" placeholder="e.g., Bank of America">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editAccountType" class="form-label">Account Type</label>
+                        <select class="form-control" id="editAccountType">
+                            <option value="checking">Checking</option>
+                            <option value="savings">Savings</option>
+                            <option value="credit">Credit Card</option>
+                            <option value="investment">Investment</option>
+                            <option value="loan">Loan</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editAccountNotes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="editAccountNotes" rows="3" placeholder="Optional notes about this account"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger me-auto" onclick="deleteAccount()">Delete Account</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveAccountChanges()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadAccounts();
+});
+
+async function loadAccounts() {
+    try {
+        const response = await fetch('/finance/api/accounts');
+        const accounts = await response.json();
+        
+        // Store accounts globally for editing
+        window.currentAccounts = accounts;
+        
+        const accountsTableBody = document.getElementById('accountsTableBody');
+        if (!accountsTableBody) return;
+        
+        if (accounts.length === 0) {
+            accountsTableBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No accounts found. Add your first account to get started!</td></tr>';
+            return;
+        }
+        
+        // Group accounts by type
+        const groupedAccounts = {};
+        accounts.forEach(account => {
+            const type = account.account_type || 'other';
+            if (!groupedAccounts[type]) {
+                groupedAccounts[type] = [];
+            }
+            groupedAccounts[type].push(account);
+        });
+        
+        accountsTableBody.innerHTML = '';
+        
+        // Define account type order and icons
+        const typeOrder = ['checking', 'savings', 'credit', 'investment', 'loan', 'other'];
+        const typeIcons = {
+            'checking': 'fas fa-university',
+            'savings': 'fas fa-piggy-bank',
+            'credit': 'fas fa-credit-card',
+            'investment': 'fas fa-chart-line',
+            'loan': 'fas fa-hand-holding-usd',
+            'other': 'fas fa-wallet'
+        };
+        const typeLabels = {
+            'checking': 'Checking',
+            'savings': 'Savings',
+            'credit': 'Credit Cards',
+            'investment': 'Investments',
+            'loan': 'Loans',
+            'other': 'Other'
+        };
+        
+        let totalBalance = 0;
+        
+        typeOrder.forEach(type => {
+            if (groupedAccounts[type] && groupedAccounts[type].length > 0) {
+                // Add group header
+                const groupBalance = groupedAccounts[type].reduce((sum, acc) => sum + acc.balance, 0);
+                totalBalance += groupBalance;
+                
+                const headerRow = document.createElement('tr');
+                headerRow.className = 'table-secondary';
+                headerRow.innerHTML = `
+                    <td colspan="2">
+                        <i class="${typeIcons[type]} me-2"></i>
+                        <strong>${typeLabels[type]}</strong>
+                        <span class="badge bg-secondary ms-2">${groupedAccounts[type].length}</span>
+                    </td>
+                    <td></td>
+                    <td class="text-end">
+                        <strong>$${groupBalance.toFixed(2)}</strong>
+                    </td>
+                    <td></td>
+                `;
+                accountsTableBody.appendChild(headerRow);
+                
+                // Add accounts in this group
+                groupedAccounts[type].forEach(account => {
+                    const row = document.createElement('tr');
+                    const balanceClass = account.balance >= 0 ? 'text-success' : 'text-danger';
+                    
+                    row.innerHTML = `
+                        <td>
+                            <strong>${account.account_name}</strong>
+                            ${account.notes ? `<br><small class="text-muted">${account.notes}</small>` : ''}
+                        </td>
+                        <td>${account.institution || 'Banking'}</td>
+                        <td><span class="badge bg-light text-dark">${account.account_type}</span></td>
+                        <td class="text-end ${balanceClass} fw-bold">$${account.balance.toFixed(2)}</td>
+                        <td class="text-center">
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="quickEditAccount('${account.account_name}', ${account.balance})" title="Quick Edit Balance">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="editAccount('${account.account_name}', ${account.balance})" title="Edit Account Details">
+                                    <i class="fas fa-cog"></i>
+                                </button>
+                                <a href="/account-details?account=${encodeURIComponent(account.account_name)}" class="btn btn-outline-info btn-sm" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </div>
+                        </td>
+                    `;
+                    accountsTableBody.appendChild(row);
+                });
+            }
+        });
+        
+        // Add total row
+        const totalRow = document.createElement('tr');
+        totalRow.className = 'table-primary';
+        totalRow.innerHTML = `
+            <td colspan="3">
+                <strong>Total Balance</strong>
+            </td>
+            <td class="text-end">
+                <strong class="${totalBalance >= 0 ? 'text-success' : 'text-danger'}">$${totalBalance.toFixed(2)}</strong>
+            </td>
+            <td></td>
+        `;
+        accountsTableBody.appendChild(totalRow);
+        
+    } catch (error) {
+        console.error('Error loading accounts:', error);
+        showAlert('Error loading accounts', 'danger');
+    }
+}
+
+// Account editing functions
+function editAccount(accountName, currentBalance) {
+    // Get the current account data from the accounts list
+    const accounts = window.currentAccounts || [];
+    const account = accounts.find(acc => acc.account_name === accountName);
+    
+    // Populate the edit modal with actual account data
+    document.getElementById('editAccountId').value = accountName;
+    document.getElementById('editAccountName').value = accountName;
+    document.getElementById('editAccountBalance').value = currentBalance;
+    document.getElementById('editAccountInstitution').value = account ? account.institution || 'Banking' : 'Banking';
+    document.getElementById('editAccountType').value = account ? account.account_type || 'checking' : 'checking';
+    document.getElementById('editAccountNotes').value = '';
+    
+    // Show the modal
+    const modal = new bootstrap.Modal(document.getElementById('editAccountModal'));
+    modal.show();
+}
+
+function quickEditAccount(accountName, currentBalance) {
+    // For now, just open the full edit modal
+    editAccount(accountName, currentBalance);
+}
+
+async function saveAccountChanges() {
+    const accountName = document.getElementById('editAccountName').value;
+    const newBalance = parseFloat(document.getElementById('editAccountBalance').value);
+    const institution = document.getElementById('editAccountInstitution').value;
+    const accountType = document.getElementById('editAccountType').value;
+    const notes = document.getElementById('editAccountNotes').value;
+    
+    if (!accountName || isNaN(newBalance)) {
+        showAlert('Please fill in all required fields', 'warning');
+        return;
+    }
+    
+    try {
+        // First update the balance
+        const balanceResponse = await fetch(`/finance/accounts/${encodeURIComponent(accountName)}/balance?balance=${newBalance}&notes=${encodeURIComponent(notes)}`, {
+            method: 'POST'
+        });
+        
+        if (!balanceResponse.ok) {
+            throw new Error('Failed to update balance');
+        }
+        
+        // Then update the account metadata
+        const metadataResponse = await fetch(`/finance/accounts/${encodeURIComponent(accountName)}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                institution: institution,
+                account_type: accountType,
+                notes: notes
+            })
+        });
+        
+        if (!metadataResponse.ok) {
+            throw new Error('Failed to update account metadata');
+        }
+        
+        showAlert('Account updated successfully', 'success');
+        
+        // Close the modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('editAccountModal'));
+        modal.hide();
+        
+        // Refresh the accounts list
+        loadAccounts();
+    } catch (error) {
+        console.error('Error updating account:', error);
+        showAlert('Error updating account', 'danger');
+    }
+}
+
+async function deleteAccount() {
+    const accountName = document.getElementById('editAccountName').value;
+    
+    if (!accountName) {
+        showAlert('No account selected for deletion', 'warning');
+        return;
+    }
+    
+    if (!confirm(`Are you sure you want to delete the account "${accountName}"? This action cannot be undone.`)) {
+        return;
+    }
+    
+    try {
+        // TODO: Implement account deletion API endpoint
+        showAlert('Account deletion feature coming soon!', 'info');
+        
+        // Close the modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('editAccountModal'));
+        modal.hide();
+        
+    } catch (error) {
+        console.error('Error deleting account:', error);
+        showAlert('Error deleting account', 'danger');
+    }
+}
+
+async function addAccount() {
+    const accountName = document.getElementById('addAccountName').value;
+    const balance = parseFloat(document.getElementById('addAccountBalance').value);
+    const institution = document.getElementById('addAccountInstitution').value;
+    const accountType = document.getElementById('addAccountType').value;
+    const notes = document.getElementById('addAccountNotes').value;
+
+    if (!accountName || isNaN(balance)) {
+        showAlert('Please fill in all required fields', 'warning');
+        return;
+    }
+
+    try {
+        const response = await fetch('/finance/api/accounts', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                account_name: accountName,
+                balance: balance,
+                institution: institution,
+                account_type: accountType,
+                notes: notes
+            })
+        });
+
+        if (response.ok) {
+            showAlert('Account added successfully', 'success');
+            document.getElementById('addAccountForm').reset();
+            
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('addAccountModal'));
+            modal.hide();
+            
+            loadAccounts();
+        } else {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || 'Failed to add account');
+        }
+    } catch (error) {
+        console.error('Error adding account:', error);
+        showAlert(`Error adding account: ${error.message}`, 'danger');
+    }
+}
+
+function showAlert(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.querySelector('main').insertBefore(alertDiv, document.querySelector('main').firstChild);
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+</script>
+{% endblock %} 

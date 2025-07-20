@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Union
 from datetime import datetime, date
 from . import models, schemas
 
@@ -150,9 +150,17 @@ def get_noun_with_attributes(db: Session, noun_name: str) -> Optional[Dict[str, 
     
     return result
 
-def track_data(db: Session, noun_name: str, attribute_name: str, value_name: str, 
-               data_value: str, data_type: str = "string", notes: str = None) -> models.Data:
-    """Track data using the EAV model. Creates nouns, attributes, and values if they don't exist."""
+def track_data(
+    db: Session,
+    noun_name: str,
+    attribute_name: str,
+    value_name: str,
+    data_value: Union[str, float, int],
+    data_type: str = "string",
+    notes: str = None,
+    required_spending: bool = False
+) -> models.Data:
+    """Track data with support for required spending flag"""
     
     # Get or create noun
     noun = get_noun_by_name(db, noun_name)
@@ -173,12 +181,32 @@ def track_data(db: Session, noun_name: str, attribute_name: str, value_name: str
             attribute_id=attribute.id, name=value_name, data_type=data_type
         ))
     
-    # Create data entry
-    data = create_data(db, schemas.DataCreate(
-        value_id=value.id, data_value=data_value, notes=notes
-    ))
+    # Create the data entry
+    data_entry = models.Data(
+        value_id=value.id,
+        data_value=str(data_value),
+        data_type=data_type,
+        date_recorded=datetime.utcnow(),
+        notes=notes
+    )
     
-    return data
+    # Add required spending flag to metadata if specified
+    if required_spending:
+        import json
+        metadata = {}
+        if notes:
+            try:
+                metadata = json.loads(notes)
+            except:
+                metadata = {"notes": notes}
+        metadata["required_spending"] = True
+        data_entry.notes = json.dumps(metadata)
+    
+    db.add(data_entry)
+    db.commit()
+    db.refresh(data_entry)
+    
+    return data_entry
 
 # Financial specific operations
 def get_financial_accounts(db: Session) -> List[Dict[str, Any]]:
@@ -189,6 +217,10 @@ def get_financial_accounts(db: Session) -> List[Dict[str, Any]]:
     
     accounts = []
     for attr in banking_noun.attributes:
+        # Skip transaction attributes
+        if "Transaction" in attr.name:
+            continue
+            
         # Get the balance value for this account
         balance_value = get_value_by_name_and_attribute(db, attr.id, "Balance")
         if balance_value:
@@ -196,15 +228,61 @@ def get_financial_accounts(db: Session) -> List[Dict[str, Any]]:
                 models.Data.value_id == balance_value.id
             ).order_by(models.Data.date_recorded.desc()).first()
             
+            # Try to get account metadata from notes or description
+            account_metadata = {}
+            if latest_balance and latest_balance.notes:
+                try:
+                    # Parse metadata from notes if it's in JSON format
+                    import json
+                    metadata = json.loads(latest_balance.notes)
+                    account_metadata = metadata
+                except:
+                    # If not JSON, use notes as institution
+                    account_metadata = {"institution": latest_balance.notes}
+            
             accounts.append({
                 "id": attr.id,
-                "institution": "Banking",  # Could be made dynamic
+                "institution": account_metadata.get("institution", "Banking"),
                 "account_name": attr.name,
+                "account_type": account_metadata.get("account_type", "checking"),
                 "balance": float(latest_balance.data_value) if latest_balance else 0.0,
                 "last_updated": latest_balance.date_recorded if latest_balance else None
             })
     
     return accounts
+
+def add_account(db: Session, account_name: str, balance: float, institution: str = "Banking", 
+                account_type: str = "checking", notes: str = None):
+    """Add a new account"""
+    # Create account metadata
+    metadata = {
+        "institution": institution,
+        "account_type": account_type
+    }
+    
+    # Store metadata in notes as JSON
+    import json
+    metadata_notes = json.dumps(metadata)
+    
+    # Create the account by adding a balance entry
+    result = track_data(
+        db=db,
+        noun_name="Banking",
+        attribute_name=account_name,
+        value_name="Balance",
+        data_value=str(balance),
+        data_type="number",
+        notes=metadata_notes
+    )
+    
+    return {
+        'id': result.id,
+        'account_name': account_name,
+        'institution': institution,
+        'account_type': account_type,
+        'balance': balance,
+        'notes': notes
+    }
 
 def update_account_balance(db: Session, account_name: str, new_balance: float, notes: str = None):
     """Update the balance for a specific account"""
@@ -218,65 +296,199 @@ def update_account_balance(db: Session, account_name: str, new_balance: float, n
         notes=notes
     )
 
+def update_account_metadata(db: Session, account_name: str, institution: str = None, account_type: str = None, notes: str = None):
+    """Update account metadata (institution, account type, notes)"""
+    banking_noun = get_noun_by_name(db, "Banking")
+    if not banking_noun:
+        raise ValueError("Banking noun not found")
+    
+    account_attr = get_attribute_by_name_and_noun(db, banking_noun.id, account_name)
+    if not account_attr:
+        raise ValueError(f"Account '{account_name}' not found")
+    
+    balance_value = get_value_by_name_and_attribute(db, account_attr.id, "Balance")
+    if not balance_value:
+        raise ValueError(f"Balance value not found for account '{account_name}'")
+    
+    # Get the latest balance entry
+    latest_balance = db.query(models.Data).filter(
+        models.Data.value_id == balance_value.id
+    ).order_by(models.Data.date_recorded.desc()).first()
+    
+    if not latest_balance:
+        raise ValueError(f"No balance data found for account '{account_name}'")
+    
+    # Create new metadata
+    metadata = {}
+    if latest_balance.notes:
+        try:
+            import json
+            metadata = json.loads(latest_balance.notes)
+        except:
+            # If not JSON, use existing notes as institution
+            metadata = {"institution": latest_balance.notes}
+    
+    # Update metadata
+    if institution is not None:
+        metadata["institution"] = institution
+    if account_type is not None:
+        metadata["account_type"] = account_type
+    
+    # Store updated metadata
+    import json
+    metadata_notes = json.dumps(metadata)
+    
+    # Create a new balance entry with updated metadata
+    result = track_data(
+        db=db,
+        noun_name="Banking",
+        attribute_name=account_name,
+        value_name="Balance",
+        data_value=latest_balance.data_value,  # Keep the same balance
+        data_type="number",
+        notes=metadata_notes
+    )
+    
+    return {
+        'id': result.id,
+        'account_name': account_name,
+        'institution': metadata.get("institution", "Banking"),
+        'account_type': metadata.get("account_type", "checking"),
+        'balance': float(latest_balance.data_value),
+        'notes': notes
+    }
+
 def get_transactions(db: Session, limit: int = 100) -> List[Dict[str, Any]]:
-    """Get recent transactions"""
+    """Get recent transactions with required spending flag - supports both old and new formats"""
     banking_noun = get_noun_by_name(db, "Banking")
     if not banking_noun:
         return []
     
     transactions = []
-    for attr in banking_noun.attributes:
-        if "Transaction" in attr.name:
-            # Get transaction data
+    
+    # Get all account attributes
+    account_attrs = db.query(models.Attribute).filter(
+        models.Attribute.noun_id == banking_noun.id
+    ).all()
+    
+    for attr in account_attrs:
+        # Skip balance attributes
+        if attr.name.endswith('_Balance'):
+            continue
+            
+        # Try new format first: look for "Transactions" value
+        transactions_value = get_value_by_name_and_attribute(db, attr.id, "Transactions")
+        if transactions_value:
+            # New format: all transactions stored under "Transactions" value
+            transaction_data = db.query(models.Data).filter(
+                models.Data.value_id == transactions_value.id
+            ).order_by(models.Data.date_recorded.desc()).limit(limit).all()
+            
+            for data in transaction_data:
+                # Parse metadata
+                metadata = {}
+                required_spending = False
+                if data.notes:
+                    try:
+                        import json
+                        metadata = json.loads(data.notes)
+                        required_spending = metadata.get("required_spending", False)
+                    except:
+                        # Fallback for old format
+                        metadata = {"description": data.notes}
+                
+                transaction = {
+                    'id': data.id,
+                    'account': attr.name,
+                    'amount': float(data.data_value),
+                    'category': metadata.get("category", "Uncategorized"),
+                    'description': metadata.get("description", ""),
+                    'date': data.date_recorded,
+                    'updated_at': data.updated_at,
+                    'required_spending': required_spending
+                }
+                transactions.append(transaction)
+        
+        # Try old format: look for account-specific transaction attributes
+        elif attr.name.endswith('_Transaction'):
+            # Old format: each category is a separate value
             transaction_values = get_values_by_attribute(db, attr.id)
             for val in transaction_values:
                 data_entries = get_data_by_value(db, val.id, limit)
                 for data in data_entries:
-                    transactions.append({
-                        "id": data.id,
-                        "account": attr.name.replace('_Transaction', ''),
-                        "category": val.name,
-                        "amount": float(data.data_value),
-                        "date": data.date_recorded,
-                        "updated_at": data.updated_at,
-                        "description": data.notes,  # Map notes to description for frontend compatibility
-                        "notes": data.notes,
-                        "type": "transaction"
-                    })
+                    # Parse metadata for old format
+                    metadata = {}
+                    required_spending = False
+                    if data.notes:
+                        try:
+                            import json
+                            metadata = json.loads(data.notes)
+                            required_spending = metadata.get("required_spending", False)
+                        except:
+                            # Old format: notes is just description
+                            metadata = {"description": data.notes}
+                    
+                    transaction = {
+                        'id': data.id,
+                        'account': attr.name.replace('_Transaction', ''),
+                        'category': val.name,
+                        'amount': float(data.data_value),
+                        'description': metadata.get("description", ""),
+                        'date': data.date_recorded,
+                        'updated_at': data.updated_at,
+                        'required_spending': required_spending
+                    }
+                    transactions.append(transaction)
     
-    # Sort by date descending
-    transactions.sort(key=lambda x: x["date"], reverse=True)
+    # Sort by date (newest first)
+    transactions.sort(key=lambda x: x['date'], reverse=True)
     return transactions[:limit]
 
-def add_transaction(db: Session, account_name: str, category: str, amount: float, 
-                   description: str = None, notes: str = None, transaction_date: datetime = None):
-    """Add a new transaction"""
-    if transaction_date is None:
-        transaction_date = datetime.now()
+def add_transaction(
+    db: Session,
+    account_name: str,
+    amount: float,
+    category: str,
+    description: str = None,
+    date_recorded: datetime = None,
+    required_spending: bool = False
+) -> Dict[str, Any]:
+    """Add a new transaction with support for required spending flag"""
+    if date_recorded is None:
+        date_recorded = datetime.utcnow()
     
+    # Create metadata for the transaction
+    import json
+    metadata = {
+        "category": category,
+        "description": description or "",
+        "required_spending": required_spending
+    }
+    
+    # Track the transaction
     result = track_data(
         db=db,
         noun_name="Banking",
-        attribute_name=f"{account_name}_Transaction",
-        value_name=category,
-        data_value=str(amount),
+        attribute_name=account_name,
+        value_name="Transactions",
+        data_value=amount,
         data_type="number",
-        notes=notes
+        notes=json.dumps(metadata),
+        required_spending=required_spending
     )
     
-    # Return enhanced transaction data
     return {
         'id': result.id,
-        'account': account_name,
-        'category': category,
+        'account_name': account_name,
         'amount': amount,
+        'category': category,
         'description': description,
-        'notes': notes,
-        'date': transaction_date.isoformat()
+        'date_recorded': result.date_recorded,
+        'required_spending': required_spending
     }
 
-def update_transaction(db: Session, transaction_id: int, account_name: str, category: str, amount: float, description: str = None, notes: str = None, transaction_date: datetime = None) -> Dict[str, Any]:
-    """Update an existing transaction"""
+def update_transaction(db: Session, transaction_id: int, account_name: str, category: str, amount: float, description: str = None, notes: str = None, transaction_date: datetime = None, required_spending: bool = False) -> Dict[str, Any]:
+    """Update an existing transaction with required spending flag"""
     try:
         # Get the existing transaction
         db_transaction = db.query(models.Data).filter(models.Data.id == transaction_id).first()
@@ -315,9 +527,17 @@ def update_transaction(db: Session, transaction_id: int, account_name: str, cate
             # Update the transaction to point to the new value
             db_transaction.value_id = new_value.id
         
+        # Create updated metadata
+        import json
+        metadata = {
+            "category": category,
+            "description": description or "",
+            "required_spending": required_spending
+        }
+        
         # Update transaction record
         db_transaction.data_value = str(amount)
-        db_transaction.notes = notes
+        db_transaction.notes = json.dumps(metadata)
         # Don't update date_recorded - preserve original transaction date
         # updated_at will be automatically updated by SQLAlchemy
         db.commit()
@@ -335,7 +555,8 @@ def update_transaction(db: Session, transaction_id: int, account_name: str, cate
             'amount': amount,
             'description': description,
             'notes': notes,
-            'date': transaction_date.isoformat()
+            'date': transaction_date.isoformat(),
+            'required_spending': required_spending
         }
     except Exception as e:
         # Rollback the transaction on error

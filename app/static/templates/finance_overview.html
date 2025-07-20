@@ -1,32 +1,36 @@
 {% extends "base.html" %}
 
-{% block title %}Life Tracker - Finance{% endblock %}
+{% block title %}Finance Overview - Life Tracker{% endblock %}
 
 {% block head %}
 <style>
-    .table-group-header {
-        background-color: #f8f9fa !important;
-        border-left: 4px solid #007bff;
+    .summary-card {
+        transition: transform 0.2s ease-in-out;
     }
     
-    .table-group-item {
-        background-color: #ffffff;
+    .summary-card:hover {
+        transform: translateY(-2px);
     }
     
-    .table-group-item:hover {
+    .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+    }
+    
+    .transaction-item {
+        transition: background-color 0.2s ease;
+    }
+    
+    .transaction-item:hover {
         background-color: #f8f9fa;
     }
     
-    .table-group-item td:first-child {
-        border-left: 2px solid #e9ecef;
+    .account-item {
+        transition: background-color 0.2s ease;
     }
     
-    .badge {
-        font-size: 0.75rem;
-    }
-    
-    .table-group-header .badge {
-        font-size: 0.875rem;
+    .account-item:hover {
+        background-color: #f8f9fa;
     }
 </style>
 {% endblock %}
@@ -36,13 +40,10 @@
     <!-- Page Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h1 class="h3 mb-0"><i class="fas fa-dollar-sign text-primary me-2"></i>Financial Tracking</h1>
-            <p class="text-muted">Manage your finances and track your spending</p>
+            <h1 class="h3 mb-0"><i class="fas fa-chart-line me-2"></i>Finance Overview</h1>
+            <p class="text-muted">Your financial dashboard and insights</p>
         </div>
         <div class="btn-group" role="group">
-            <a href="/finance/overview" class="btn btn-outline-primary">
-                <i class="fas fa-chart-line me-1"></i>Overview
-            </a>
             <a href="/finance/accounts" class="btn btn-outline-primary">
                 <i class="fas fa-university me-1"></i>Accounts
             </a>
@@ -58,72 +59,76 @@
         </div>
     </div>
 
-    <!-- Finance Overview Content -->
-    <div class="row">
+    <!-- Summary Cards -->
+    <div class="row mb-4">
         <div class="col-md-3">
-            <div class="card bg-primary text-white">
+            <div class="card summary-card bg-primary text-white">
                 <div class="card-body text-center">
                     <h5 class="card-title">Total Balance</h5>
                     <h2 class="mb-0" id="totalBalance">$0.00</h2>
+                    <small class="text-white-50">Across all accounts</small>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card bg-success text-white">
+            <div class="card summary-card bg-success text-white">
                 <div class="card-body text-center">
                     <h5 class="card-title">Accounts</h5>
                     <h2 class="mb-0" id="accountCount">0</h2>
+                    <small class="text-white-50">Active accounts</small>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card bg-info text-white">
+            <div class="card summary-card bg-info text-white">
                 <div class="card-body text-center">
-                    <h5 class="card-title">Recent Transactions</h5>
+                    <h5 class="card-title">Transactions</h5>
                     <h2 class="mb-0" id="transactionCount">0</h2>
+                    <small class="text-white-50">This month</small>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card bg-warning text-white">
+            <div class="card summary-card bg-warning text-white">
                 <div class="card-body text-center">
                     <h5 class="card-title">Total Spending</h5>
                     <h2 class="mb-0" id="totalSpending">$0.00</h2>
+                    <small class="text-white-50">This month</small>
                 </div>
             </div>
         </div>
     </div>
-    
+
     <!-- Charts Row -->
-    <div class="row mt-4">
-        <div class="col-md-6">
+    <div class="row mb-4">
+        <div class="col-md-8">
             <div class="card">
                 <div class="card-header">
                     <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Net Worth Over Time</h5>
                 </div>
                 <div class="card-body">
-                    <canvas id="networthChart" width="400" height="200"></canvas>
+                    <canvas id="networthChart" height="300"></canvas>
                 </div>
             </div>
         </div>
-        <div class="col-md-6">
+        <div class="col-md-4">
             <div class="card">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Spending Over Time</h5>
+                    <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Monthly Spending</h5>
                 </div>
                 <div class="card-body">
-                    <canvas id="spendingChart" width="400" height="200"></canvas>
+                    <canvas id="spendingChart" height="300"></canvas>
                 </div>
             </div>
         </div>
     </div>
-    
-    <!-- Recent Transactions Row -->
-    <div class="row mt-4">
-        <div class="col-12">
+
+    <!-- Recent Transactions -->
+    <div class="row">
+        <div class="col-md-6">
             <div class="card">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-list me-2"></i>Top 5 Recent Transactions</h5>
+                    <h5 class="mb-0"><i class="fas fa-clock me-2"></i>Recent Transactions</h5>
                 </div>
                 <div class="card-body">
                     <div id="recentTransactionsList">
@@ -132,19 +137,15 @@
                 </div>
             </div>
         </div>
-    </div>
-    
-    <div class="row mt-4">
-        <div class="col-12">
+        <div class="col-md-6">
             <div class="card">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-database me-2"></i>Quick Setup</h5>
+                    <h5 class="mb-0"><i class="fas fa-university me-2"></i>Account Summary</h5>
                 </div>
                 <div class="card-body">
-                    <p class="mb-3">Need some example data to get started?</p>
-                    <button id="setupExampleData" class="btn btn-outline-primary">
-                        <i class="fas fa-magic me-2"></i>Load Example Data
-                    </button>
+                    <div id="accountSummaryList">
+                        <p class="text-muted">Loading account summary...</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -159,11 +160,6 @@ let spendingChart = null;
 
 document.addEventListener('DOMContentLoaded', function() {
     loadFinancialData();
-    
-    // Setup example data button
-    document.getElementById('setupExampleData').addEventListener('click', function() {
-        setupExampleData();
-    });
 });
 
 async function loadFinancialData() {
@@ -180,6 +176,7 @@ async function loadFinancialData() {
         await loadNetworthData();
         await loadSpendingData();
         await loadRecentTransactions();
+        await loadAccountSummary();
         
     } catch (error) {
         console.error('Error loading financial data:', error);
@@ -223,7 +220,7 @@ async function loadRecentTransactions() {
         
         transactions.forEach(transaction => {
             const transactionItem = document.createElement('div');
-            transactionItem.className = 'border-bottom pb-2 mb-2';
+            transactionItem.className = 'transaction-item border-bottom pb-2 mb-2';
             const amountClass = transaction.amount >= 0 ? 'text-success' : 'text-danger';
             const amountSign = transaction.amount >= 0 ? '+' : '';
             
@@ -249,6 +246,41 @@ async function loadRecentTransactions() {
         
     } catch (error) {
         console.error('Error loading recent transactions:', error);
+    }
+}
+
+async function loadAccountSummary() {
+    try {
+        const response = await fetch('/finance/api/accounts');
+        const accounts = await response.json();
+        
+        const summaryList = document.getElementById('accountSummaryList');
+        summaryList.innerHTML = '';
+        
+        if (accounts.length === 0) {
+            summaryList.innerHTML = '<p class="text-muted">No accounts found.</p>';
+            return;
+        }
+        
+        accounts.forEach(account => {
+            const accountItem = document.createElement('div');
+            accountItem.className = 'account-item border-bottom pb-2 mb-2';
+            const balanceClass = account.balance >= 0 ? 'text-success' : 'text-danger';
+            
+            accountItem.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>${account.account_name}</strong>
+                        <br><small class="text-muted">${account.institution || 'Banking'} • ${account.account_type}</small>
+                    </div>
+                    <span class="${balanceClass} fw-bold">$${account.balance.toFixed(2)}</span>
+                </div>
+            `;
+            summaryList.appendChild(accountItem);
+        });
+        
+    } catch (error) {
+        console.error('Error loading account summary:', error);
     }
 }
 
@@ -341,24 +373,6 @@ function createSpendingChart(spendingHistory) {
             }
         }
     });
-}
-
-async function setupExampleData() {
-    try {
-        const response = await fetch('/finance/api/setup/example-data', {
-            method: 'POST'
-        });
-        
-        if (response.ok) {
-            showAlert('Example data loaded successfully!', 'success');
-            loadFinancialData(); // Refresh the data
-        } else {
-            throw new Error('Failed to load example data');
-        }
-    } catch (error) {
-        console.error('Error setting up example data:', error);
-        showAlert('Error loading example data', 'danger');
-    }
 }
 
 function showAlert(message, type) {

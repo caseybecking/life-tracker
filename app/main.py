@@ -17,8 +17,8 @@ app = FastAPI(
 )
 
 # Include routers
-app.include_router(finance.router)
-app.include_router(general.router)
+app.include_router(finance.router, prefix="/finance", tags=["finance"])
+app.include_router(general.router, prefix="/api", tags=["api"])
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")

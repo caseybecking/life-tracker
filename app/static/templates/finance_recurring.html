@@ -1,0 +1,448 @@
+{% extends "base.html" %}
+
+{% block title %}Finance Recurring - Life Tracker{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0"><i class="fas fa-redo me-2"></i>Recurring Transactions</h1>
+            <p class="text-muted">Manage your recurring payments and income</p>
+        </div>
+        <div class="btn-group" role="group">
+            <a href="/finance/overview" class="btn btn-outline-primary">
+                <i class="fas fa-chart-line me-1"></i>Overview
+            </a>
+            <a href="/finance/accounts" class="btn btn-outline-primary">
+                <i class="fas fa-university me-1"></i>Accounts
+            </a>
+            <a href="/finance/transactions" class="btn btn-outline-primary">
+                <i class="fas fa-exchange-alt me-1"></i>Transactions
+            </a>
+            <a href="/finance/budget" class="btn btn-outline-primary">
+                <i class="fas fa-chart-pie me-1"></i>Budget
+            </a>
+        </div>
+    </div>
+
+    <!-- Add Recurring Transaction Button -->
+    <div class="d-flex justify-content-end mb-3">
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addRecurringModal">
+            <i class="fas fa-plus me-1"></i>Add Recurring Transaction
+        </button>
+    </div>
+
+    <!-- Recurring Transactions Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-list me-2"></i>Recurring Transactions</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Description</th>
+                            <th>Account</th>
+                            <th>Category</th>
+                            <th>Amount</th>
+                            <th>Frequency</th>
+                            <th>Next Due</th>
+                            <th>Status</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recurringTableBody">
+                        <tr>
+                            <td colspan="8" class="text-center text-muted">Loading recurring transactions...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Recurring Transaction Modal -->
+<div class="modal fade" id="addRecurringModal" tabindex="-1" aria-labelledby="addRecurringModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addRecurringModalLabel">
+                    <i class="fas fa-plus me-2"></i>Add Recurring Transaction
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addRecurringForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="recurringAccount" class="form-label">Account</label>
+                                <select class="form-control" id="recurringAccount" required>
+                                    <option value="">Select Account</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="recurringCategory" class="form-label">Category</label>
+                                <select class="form-control" id="recurringCategory" required>
+                                    <option value="">Select Category</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="recurringAmount" class="form-label">Amount</label>
+                                <input type="number" step="0.01" class="form-control" id="recurringAmount" placeholder="0.00" required>
+                                <div class="form-text">Use positive for income, negative for expenses</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="recurringFrequency" class="form-label">Frequency</label>
+                                <select class="form-control" id="recurringFrequency" required>
+                                    <option value="">Select Frequency</option>
+                                    <option value="weekly">Weekly</option>
+                                    <option value="biweekly">Bi-weekly</option>
+                                    <option value="monthly">Monthly</option>
+                                    <option value="quarterly">Quarterly</option>
+                                    <option value="yearly">Yearly</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="recurringStartDate" class="form-label">Start Date</label>
+                                <input type="date" class="form-control" id="recurringStartDate" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="recurringEndDate" class="form-label">End Date (Optional)</label>
+                                <input type="date" class="form-control" id="recurringEndDate">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="recurringDescription" class="form-label">Description</label>
+                        <input type="text" class="form-control" id="recurringDescription" placeholder="Transaction description">
+                    </div>
+                    <div class="mb-3">
+                        <label for="recurringNotes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="recurringNotes" rows="2" placeholder="Optional notes"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="recurringRequiredSpending">
+                            <label class="form-check-label" for="recurringRequiredSpending">
+                                <i class="fas fa-exclamation-triangle text-warning me-1"></i>Required Spending
+                            </label>
+                        </div>
+                        <small class="form-text text-muted">Check this for essential expenses like rent, utilities, insurance, etc.</small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="addRecurringTransaction()">Add Recurring Transaction</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Recurring Transaction Modal -->
+<div class="modal fade" id="editRecurringModal" tabindex="-1" aria-labelledby="editRecurringModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editRecurringModalLabel">
+                    <i class="fas fa-edit me-2"></i>Edit Recurring Transaction
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editRecurringForm">
+                    <input type="hidden" id="editRecurringId">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editRecurringAccount" class="form-label">Account</label>
+                                <select class="form-control" id="editRecurringAccount" required>
+                                    <option value="">Select Account</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editRecurringCategory" class="form-label">Category</label>
+                                <select class="form-control" id="editRecurringCategory" required>
+                                    <option value="">Select Category</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editRecurringAmount" class="form-label">Amount</label>
+                                <input type="number" step="0.01" class="form-control" id="editRecurringAmount" placeholder="0.00" required>
+                                <div class="form-text">Use positive for income, negative for expenses</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editRecurringFrequency" class="form-label">Frequency</label>
+                                <select class="form-control" id="editRecurringFrequency" required>
+                                    <option value="">Select Frequency</option>
+                                    <option value="weekly">Weekly</option>
+                                    <option value="biweekly">Bi-weekly</option>
+                                    <option value="monthly">Monthly</option>
+                                    <option value="quarterly">Quarterly</option>
+                                    <option value="yearly">Yearly</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editRecurringStartDate" class="form-label">Start Date</label>
+                                <input type="date" class="form-control" id="editRecurringStartDate" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editRecurringEndDate" class="form-label">End Date (Optional)</label>
+                                <input type="date" class="form-control" id="editRecurringEndDate">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editRecurringDescription" class="form-label">Description</label>
+                        <input type="text" class="form-control" id="editRecurringDescription" placeholder="Transaction description">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editRecurringNotes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="editRecurringNotes" rows="2" placeholder="Optional notes"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="editRecurringRequiredSpending">
+                            <label class="form-check-label" for="editRecurringRequiredSpending">
+                                <i class="fas fa-exclamation-triangle text-warning me-1"></i>Required Spending
+                            </label>
+                        </div>
+                        <small class="form-text text-muted">Check this for essential expenses like rent, utilities, insurance, etc.</small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger me-auto" onclick="deleteRecurringTransaction()">Delete</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveRecurringChanges()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadRecurringTransactions();
+    loadCategories();
+    loadAccounts();
+    
+    // Set default date for recurring modal
+    const addModal = document.getElementById('addRecurringModal');
+    if (addModal) {
+        addModal.addEventListener('show.bs.modal', function() {
+            document.getElementById('recurringStartDate').value = new Date().toISOString().slice(0, 10);
+        });
+    }
+});
+
+async function loadRecurringTransactions() {
+    try {
+        // For now, show a placeholder since recurring transactions aren't fully implemented
+        const recurringTableBody = document.getElementById('recurringTableBody');
+        recurringTableBody.innerHTML = `
+            <tr>
+                <td colspan="8" class="text-center text-muted">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Recurring transactions feature coming soon! 
+                    <br><small>This will allow you to set up automatic recurring payments and income.</small>
+                </td>
+            </tr>
+        `;
+        
+    } catch (error) {
+        console.error('Error loading recurring transactions:', error);
+        showAlert('Error loading recurring transactions', 'danger');
+    }
+}
+
+async function loadCategories() {
+    try {
+        const response = await fetch('/finance/api/categories');
+        const categories = await response.json();
+        
+        // Populate category dropdowns
+        populateCategoryDropdowns(categories);
+        
+    } catch (error) {
+        console.error('Error loading categories:', error);
+    }
+}
+
+async function loadAccounts() {
+    try {
+        const response = await fetch('/finance/api/accounts');
+        const accounts = await response.json();
+        
+        // Populate account dropdowns
+        populateAccountDropdowns(accounts);
+        
+    } catch (error) {
+        console.error('Error loading accounts:', error);
+    }
+}
+
+function populateCategoryDropdowns(categories) {
+    // Populate add recurring modal dropdowns
+    const addCategoryDropdown = document.getElementById('recurringCategory');
+    const editCategoryDropdown = document.getElementById('editRecurringCategory');
+    
+    if (addCategoryDropdown) {
+        addCategoryDropdown.innerHTML = '<option value="">Select Category</option>';
+        categories.forEach(group => {
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = group.category_group;
+            
+            group.subcategories.forEach(subcategory => {
+                const option = document.createElement('option');
+                option.value = subcategory;
+                option.textContent = subcategory;
+                optgroup.appendChild(option);
+            });
+            
+            addCategoryDropdown.appendChild(optgroup);
+        });
+    }
+    
+    if (editCategoryDropdown) {
+        editCategoryDropdown.innerHTML = '<option value="">Select Category</option>';
+        categories.forEach(group => {
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = group.category_group;
+            
+            group.subcategories.forEach(subcategory => {
+                const option = document.createElement('option');
+                option.value = subcategory;
+                option.textContent = subcategory;
+                optgroup.appendChild(option);
+            });
+            
+            editCategoryDropdown.appendChild(optgroup);
+        });
+    }
+}
+
+function populateAccountDropdowns(accounts) {
+    // Populate add recurring modal dropdowns
+    const addAccountDropdown = document.getElementById('recurringAccount');
+    const editAccountDropdown = document.getElementById('editRecurringAccount');
+    
+    if (addAccountDropdown) {
+        addAccountDropdown.innerHTML = '<option value="">Select Account</option>';
+        accounts.forEach(account => {
+            const option = document.createElement('option');
+            option.value = account.account_name;
+            option.textContent = account.account_name;
+            addAccountDropdown.appendChild(option);
+        });
+    }
+    
+    if (editAccountDropdown) {
+        editAccountDropdown.innerHTML = '<option value="">Select Account</option>';
+        accounts.forEach(account => {
+            const option = document.createElement('option');
+            option.value = account.account_name;
+            option.textContent = account.account_name;
+            editAccountDropdown.appendChild(option);
+        });
+    }
+}
+
+async function addRecurringTransaction() {
+    const accountName = document.getElementById('recurringAccount').value;
+    const category = document.getElementById('recurringCategory').value;
+    const amount = parseFloat(document.getElementById('recurringAmount').value);
+    const frequency = document.getElementById('recurringFrequency').value;
+    const startDate = document.getElementById('recurringStartDate').value;
+    const endDate = document.getElementById('recurringEndDate').value;
+    const description = document.getElementById('recurringDescription').value;
+    const notes = document.getElementById('recurringNotes').value;
+    const requiredSpending = document.getElementById('recurringRequiredSpending').checked;
+    
+    if (!accountName || !category || isNaN(amount) || !frequency || !startDate) {
+        showAlert('Please fill in all required fields', 'warning');
+        return;
+    }
+    
+    try {
+        // TODO: Implement recurring transaction API endpoint
+        showAlert(`Recurring transaction added: ${description || category} - $${amount.toFixed(2)} ${frequency}`, 'success');
+        document.getElementById('addRecurringForm').reset();
+        // Set default date to today
+        document.getElementById('recurringStartDate').value = new Date().toISOString().slice(0, 10);
+        
+        // Close modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('addRecurringModal'));
+        modal.hide();
+        
+    } catch (error) {
+        console.error('Error adding recurring transaction:', error);
+        showAlert('Error adding recurring transaction', 'danger');
+    }
+}
+
+function editRecurringTransaction(id) {
+    // TODO: Implement edit functionality
+    showAlert('Edit functionality coming soon!', 'info');
+}
+
+async function saveRecurringChanges() {
+    // TODO: Implement save functionality
+    showAlert('Save functionality coming soon!', 'info');
+}
+
+async function deleteRecurringTransaction() {
+    // TODO: Implement delete functionality
+    showAlert('Delete functionality coming soon!', 'info');
+}
+
+function showAlert(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.querySelector('main').insertBefore(alertDiv, document.querySelector('main').firstChild);
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+</script>
+{% endblock %} 

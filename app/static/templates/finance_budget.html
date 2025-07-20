@@ -1,0 +1,317 @@
+{% extends "base.html" %}
+
+{% block title %}Finance Budget - Life Tracker{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0"><i class="fas fa-chart-pie me-2"></i>Budget</h1>
+            <p class="text-muted">Set and track your spending budgets</p>
+        </div>
+        <div class="btn-group" role="group">
+            <a href="/finance/overview" class="btn btn-outline-primary">
+                <i class="fas fa-chart-line me-1"></i>Overview
+            </a>
+            <a href="/finance/accounts" class="btn btn-outline-primary">
+                <i class="fas fa-university me-1"></i>Accounts
+            </a>
+            <a href="/finance/transactions" class="btn btn-outline-primary">
+                <i class="fas fa-exchange-alt me-1"></i>Transactions
+            </a>
+            <a href="/finance/recurring" class="btn btn-outline-primary">
+                <i class="fas fa-redo me-1"></i>Recurring
+            </a>
+        </div>
+    </div>
+
+    <!-- Budget Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Total Budget</h5>
+                    <h2 class="mb-0" id="totalBudget">$0.00</h2>
+                    <small class="text-muted">This month</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Spent</h5>
+                    <h2 class="mb-0" id="totalSpent">$0.00</h2>
+                    <small class="text-muted">This month</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Remaining</h5>
+                    <h2 class="mb-0" id="remainingBudget">$0.00</h2>
+                    <small class="text-muted">This month</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Progress</h5>
+                    <div class="progress mb-2">
+                        <div class="progress-bar" id="budgetProgress" role="progressbar" style="width: 0%"></div>
+                    </div>
+                    <small class="text-muted" id="budgetPercentage">0% used</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Budget Management -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-plus me-2"></i>Set Budget</h5>
+                </div>
+                <div class="card-body">
+                    <form id="budgetForm">
+                        <div class="mb-3">
+                            <label for="budgetCategory" class="form-label">Category</label>
+                            <select class="form-control" id="budgetCategory" required>
+                                <option value="">Select Category</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="budgetAmount" class="form-label">Monthly Budget</label>
+                            <input type="number" step="0.01" class="form-control" id="budgetAmount" placeholder="0.00" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Set Budget</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Budget by Category</h5>
+                </div>
+                <div class="card-body">
+                    <div id="budgetCategoriesList">
+                        <p class="text-muted">No budgets set yet. Set your first budget to get started!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Budget Chart -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Budget vs Actual Spending</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="budgetChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let budgetChart = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadBudgetData();
+    loadCategories();
+    
+    // Budget form submission
+    const budgetForm = document.getElementById('budgetForm');
+    if (budgetForm) {
+        budgetForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            setBudget();
+        });
+    }
+});
+
+async function loadBudgetData() {
+    try {
+        // Load spending data
+        const spendingResponse = await fetch('/finance/api/spending');
+        const spendingData = await spendingResponse.json();
+        
+        // For now, we'll use mock budget data since budget functionality isn't fully implemented
+        const mockBudgetData = {
+            total_budget: 5000,
+            total_spent: spendingData.total_spending,
+            categories: [
+                { category: 'Groceries', budget: 600, spent: 450 },
+                { category: 'Transportation', budget: 300, spent: 280 },
+                { category: 'Entertainment', budget: 200, spent: 150 },
+                { category: 'Utilities', budget: 400, spent: 380 }
+            ]
+        };
+        
+        updateBudgetDisplay(mockBudgetData);
+        createBudgetChart(mockBudgetData.categories);
+        
+    } catch (error) {
+        console.error('Error loading budget data:', error);
+        showAlert('Error loading budget data', 'danger');
+    }
+}
+
+function updateBudgetDisplay(budgetData) {
+    const totalBudget = budgetData.total_budget;
+    const totalSpent = budgetData.total_spent;
+    const remaining = totalBudget - totalSpent;
+    const percentage = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
+    
+    document.getElementById('totalBudget').textContent = `$${totalBudget.toFixed(2)}`;
+    document.getElementById('totalSpent').textContent = `$${totalSpent.toFixed(2)}`;
+    document.getElementById('remainingBudget').textContent = `$${remaining.toFixed(2)}`;
+    document.getElementById('budgetProgress').style.width = `${Math.min(percentage, 100)}%`;
+    document.getElementById('budgetPercentage').textContent = `${percentage.toFixed(1)}% used`;
+    
+    // Set progress bar color
+    const progressBar = document.getElementById('budgetProgress');
+    if (percentage > 90) {
+        progressBar.className = 'progress-bar bg-danger';
+    } else if (percentage > 75) {
+        progressBar.className = 'progress-bar bg-warning';
+    } else {
+        progressBar.className = 'progress-bar bg-success';
+    }
+}
+
+function createBudgetChart(categories) {
+    const ctx = document.getElementById('budgetChart').getContext('2d');
+    
+    // Destroy existing chart if it exists
+    if (budgetChart) {
+        budgetChart.destroy();
+    }
+    
+    const labels = categories.map(cat => cat.category);
+    const budgetData = categories.map(cat => cat.budget);
+    const spentData = categories.map(cat => cat.spent);
+    
+    budgetChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Budget',
+                    data: budgetData,
+                    backgroundColor: 'rgba(75, 192, 192, 0.8)',
+                    borderColor: 'rgb(75, 192, 192)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Spent',
+                    data: spentData,
+                    backgroundColor: 'rgba(255, 99, 132, 0.8)',
+                    borderColor: 'rgb(255, 99, 132)',
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value.toLocaleString();
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+async function loadCategories() {
+    try {
+        const response = await fetch('/finance/api/categories');
+        const categories = await response.json();
+        
+        // Populate budget category dropdown
+        const budgetCategoryDropdown = document.getElementById('budgetCategory');
+        budgetCategoryDropdown.innerHTML = '<option value="">Select Category</option>';
+        
+        categories.forEach(group => {
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = group.category_group;
+            
+            group.subcategories.forEach(subcategory => {
+                const option = document.createElement('option');
+                option.value = subcategory;
+                option.textContent = subcategory;
+                optgroup.appendChild(option);
+            });
+            
+            budgetCategoryDropdown.appendChild(optgroup);
+        });
+        
+    } catch (error) {
+        console.error('Error loading categories:', error);
+    }
+}
+
+async function setBudget() {
+    const category = document.getElementById('budgetCategory').value;
+    const amount = parseFloat(document.getElementById('budgetAmount').value);
+    
+    if (!category || isNaN(amount)) {
+        showAlert('Please fill in all required fields', 'warning');
+        return;
+    }
+    
+    try {
+        // TODO: Implement budget setting API endpoint
+        showAlert(`Budget set for ${category}: $${amount.toFixed(2)}`, 'success');
+        document.getElementById('budgetForm').reset();
+        
+        // Reload budget data
+        loadBudgetData();
+        
+    } catch (error) {
+        console.error('Error setting budget:', error);
+        showAlert('Error setting budget', 'danger');
+    }
+}
+
+function showAlert(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.querySelector('main').insertBefore(alertDiv, document.querySelector('main').firstChild);
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+</script>
+{% endblock %} 
