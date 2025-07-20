@@ -646,48 +646,57 @@ def delete_subcategory(
 
 @router.post("/api/settings/categories/reset")
 def reset_categories(db: Session = Depends(get_db)):
-    """Reset all categories to default (only if no transactions exist)"""
+    """Reset categories to default if no transactions exist"""
     try:
-        from .. import models
-        
-        # Check if there are any transactions
-        all_transactions = crud.get_transactions(db, limit=1)
-        if all_transactions:
+        # Check if any transactions exist
+        transactions = crud.get_transactions(db, limit=1)
+        if transactions:
             raise HTTPException(
                 status_code=400, 
-                detail="Cannot reset categories - transactions exist. Clear all data first."
+                detail="Cannot reset categories when transactions exist. Please clear all data first."
             )
         
-        # Clear existing categories
-        finance_categories_noun = db.query(models.Noun).filter(models.Noun.name == "Finance_Categories").first()
-        if finance_categories_noun:
-            # Delete all values in finance categories
-            db.query(models.Value).filter(
-                models.Value.attribute_id.in_(
-                    db.query(models.Attribute.id).filter(
-                        models.Attribute.noun_id == finance_categories_noun.id
-                    )
-                )
-            ).delete()
-            
-            # Delete all attributes in finance categories
-            db.query(models.Attribute).filter(
-                models.Attribute.noun_id == finance_categories_noun.id
-            ).delete()
-            
-            # Delete the finance categories noun itself
-            db.delete(finance_categories_noun)
-        
-        # Setup default categories
-        categories_result = crud.setup_finance_categories(db)
-        
+        # Reset categories
+        result = crud.setup_finance_categories(db)
         return {
-            "message": "Categories reset to default",
-            "total_groups": categories_result['total_groups'],
-            "total_subcategories": categories_result['total_subcategories']
+            "message": "Categories reset successfully",
+            "total_groups": result["total_groups"],
+            "total_subcategories": result["total_subcategories"]
         }
-        
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error resetting categories: {str(e)}") 
+        raise HTTPException(status_code=500, detail=f"Error resetting categories: {str(e)}")
+
+# Theme management endpoints
+@router.get("/api/settings/theme")
+def get_theme(db: Session = Depends(get_db)):
+    """Get current theme setting"""
+    try:
+        theme = crud.get_theme_setting(db)
+        return {"theme": theme}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting theme: {str(e)}")
+
+@router.post("/api/settings/theme")
+def set_theme(theme: str = Form(...), db: Session = Depends(get_db)):
+    """Set theme preference"""
+    try:
+        if theme not in ["light", "dark"]:
+            raise HTTPException(status_code=400, detail="Theme must be 'light' or 'dark'")
+        
+        result = crud.set_theme_setting(db, theme)
+        return {"message": f"Theme set to {theme}", "theme": theme}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error setting theme: {str(e)}")
+
+@router.get("/api/settings")
+def get_all_settings(db: Session = Depends(get_db)):
+    """Get all user settings"""
+    try:
+        settings = crud.get_all_settings(db)
+        return settings
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting settings: {str(e)}") 

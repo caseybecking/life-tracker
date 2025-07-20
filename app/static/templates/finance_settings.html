@@ -42,6 +42,11 @@
                                 <i class="fas fa-database me-1"></i>Data Management
                             </button>
                         </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="theme-tab" data-bs-toggle="tab" data-bs-target="#theme" type="button" role="tab">
+                                <i class="fas fa-palette me-1"></i>Appearance
+                            </button>
+                        </li>
                     </ul>
                 </div>
                 <div class="card-body">
@@ -147,6 +152,63 @@
                                             <button class="btn btn-outline-primary" disabled>
                                                 <i class="fas fa-download me-1"></i>Export Data
                                             </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Theme Settings Tab -->
+                        <div class="tab-pane fade" id="theme" role="tabpanel">
+                            <h5><i class="fas fa-palette me-2"></i>Appearance Settings</h5>
+                            <p class="text-muted">Customize the appearance of your Life Tracker interface.</p>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h6 class="mb-0"><i class="fas fa-moon me-2"></i>Theme Selection</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <p class="text-muted">Choose your preferred theme for the application interface.</p>
+                                            
+                                            <div class="mb-3">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="themeOption" id="lightTheme" value="light">
+                                                    <label class="form-check-label" for="lightTheme">
+                                                        <i class="fas fa-sun me-2"></i>Light Theme
+                                                    </label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="themeOption" id="darkTheme" value="dark">
+                                                    <label class="form-check-label" for="darkTheme">
+                                                        <i class="fas fa-moon me-2"></i>Dark Theme
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            
+                                            <button class="btn btn-primary" onclick="saveThemePreference()">
+                                                <i class="fas fa-save me-1"></i>Save Theme
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Theme Information</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <h6>Current Theme</h6>
+                                            <p id="currentThemeInfo" class="text-muted">Loading...</p>
+                                            
+                                            <h6>Theme Features</h6>
+                                            <ul class="text-muted">
+                                                <li>Automatic theme switching</li>
+                                                <li>Persistent theme preference</li>
+                                                <li>Optimized for both light and dark environments</li>
+                                                <li>Consistent across all pages</li>
+                                            </ul>
                                         </div>
                                     </div>
                                 </div>
@@ -479,6 +541,82 @@ async function clearAllData() {
         clearBtn.innerHTML = '<i class="fas fa-trash me-1"></i>Clear All Data';
     }
 }
+
+// Theme management functions
+async function loadThemeSettings() {
+    try {
+        const response = await fetch('/finance/api/settings/theme');
+        const data = await response.json();
+        
+        // Update radio buttons
+        const lightTheme = document.getElementById('lightTheme');
+        const darkTheme = document.getElementById('darkTheme');
+        
+        if (data.theme === 'dark') {
+            darkTheme.checked = true;
+        } else {
+            lightTheme.checked = true;
+        }
+        
+        // Update current theme info
+        const currentThemeInfo = document.getElementById('currentThemeInfo');
+        currentThemeInfo.textContent = data.theme === 'dark' ? 'Dark Theme' : 'Light Theme';
+        
+    } catch (error) {
+        console.error('Error loading theme settings:', error);
+        showAlert('Error loading theme settings', 'danger');
+    }
+}
+
+async function saveThemePreference() {
+    const selectedTheme = document.querySelector('input[name="themeOption"]:checked');
+    
+    if (!selectedTheme) {
+        showAlert('Please select a theme', 'warning');
+        return;
+    }
+    
+    try {
+        const formData = new FormData();
+        formData.append('theme', selectedTheme.value);
+        
+        const response = await fetch('/finance/api/settings/theme', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            showAlert(result.message, 'success');
+            
+            // Update the global theme
+            if (window.applyTheme) {
+                window.applyTheme(selectedTheme.value);
+            }
+            
+            // Update current theme info
+            const currentThemeInfo = document.getElementById('currentThemeInfo');
+            currentThemeInfo.textContent = selectedTheme.value === 'dark' ? 'Dark Theme' : 'Light Theme';
+            
+        } else {
+            const error = await response.json();
+            showAlert(error.detail, 'danger');
+        }
+    } catch (error) {
+        console.error('Error saving theme preference:', error);
+        showAlert('Error saving theme preference', 'danger');
+    }
+}
+
+// Initialize theme settings when tab is shown
+document.addEventListener('DOMContentLoaded', function() {
+    const themeTab = document.getElementById('theme-tab');
+    if (themeTab) {
+        themeTab.addEventListener('shown.bs.tab', function() {
+            loadThemeSettings();
+        });
+    }
+});
 
 function showAlert(message, type) {
     const alertDiv = document.createElement('div');

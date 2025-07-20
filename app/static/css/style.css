@@ -1,85 +1,107 @@
-/* Custom styles for Life Tracker */
+/* Life Tracker - Minimal custom styles, rely on Bootstrap 5 theming */
 
+/* Ensure body uses Bootstrap's theme variables */
 body {
-    background-color: #f8f9fa;
+    background-color: var(--bs-body-bg);
+    color: var(--bs-body-color);
 }
 
-.navbar-brand {
-    font-weight: bold;
+/* Fix footer to use theme variables */
+footer {
+    background-color: var(--bs-secondary-bg) !important;
+    color: var(--bs-body-color) !important;
 }
 
-.card {
+/* Ensure table rows use theme variables */
+tr {
+    background-color: var(--bs-body-bg);
+    color: var(--bs-body-color);
+}
+
+/* More specific table styling for dark mode */
+table {
+    background-color: var(--bs-body-bg);
+    color: var(--bs-body-color);
+}
+
+table td {
+    background-color: var(--bs-body-bg);
+    color: var(--bs-body-color);
+    border-color: var(--bs-border-color);
+}
+
+table th {
+    background-color: var(--bs-secondary-bg);
+    color: var(--bs-body-color);
+    border-color: var(--bs-border-color);
+}
+
+/* Override Bootstrap's table styles */
+.table {
+    background-color: var(--bs-body-bg) !important;
+    color: var(--bs-body-color) !important;
+}
+
+.table td {
+    background-color: var(--bs-body-bg) !important;
+    color: var(--bs-body-color) !important;
+    border-color: var(--bs-border-color) !important;
+}
+
+.table th {
+    background-color: var(--bs-secondary-bg) !important;
+    color: var(--bs-body-color) !important;
+    border-color: var(--bs-border-color) !important;
+}
+
+/* Custom table classes used in finance templates */
+.table-group-header {
+    background-color: var(--bs-secondary-bg) !important;
+    color: var(--bs-body-color) !important;
+}
+
+.table-group-item {
+    background-color: var(--bs-body-bg) !important;
+    color: var(--bs-body-color) !important;
+}
+
+.table-group-item:hover {
+    background-color: var(--bs-secondary-bg) !important;
+    color: var(--bs-body-color) !important;
+}
+
+.table-group-item td {
+    background-color: var(--bs-body-bg) !important;
+    color: var(--bs-body-color) !important;
+    border-color: var(--bs-border-color) !important;
+}
+
+.table-group-header td {
+    background-color: var(--bs-secondary-bg) !important;
+    color: var(--bs-body-color) !important;
+    border-color: var(--bs-border-color) !important;
+}
+
+/* Theme toggle button styles */
+.theme-toggle {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
     border: none;
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-    transition: box-shadow 0.15s ease-in-out;
-}
-
-.card:hover {
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-}
-
-.card-header {
-    background-color: #fff;
-    border-bottom: 1px solid #dee2e6;
-    font-weight: 600;
-}
-
-.jumbotron {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
+    font-size: 1.2rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
 }
 
-.jumbotron h1 {
-    font-weight: 700;
-}
-
-.btn {
-    border-radius: 0.5rem;
-    font-weight: 500;
-}
-
-.btn-lg {
-    padding: 0.75rem 1.5rem;
-    font-size: 1.1rem;
-}
-
-.form-control {
-    border-radius: 0.5rem;
-    border: 1px solid #ced4da;
-}
-
-.form-control:focus {
-    border-color: #80bdff;
-    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-}
-
-.list-group-item {
-    border: 1px solid #dee2e6;
-    border-radius: 0.5rem;
-    margin-bottom: 0.5rem;
-}
-
-.badge {
-    font-size: 0.875rem;
-    padding: 0.5rem 0.75rem;
-}
-
-.alert {
-    border-radius: 0.5rem;
-    border: none;
-}
-
-.alert-dismissible .btn-close {
-    padding: 1.25rem;
-}
-
-/* Financial specific styles */
-.text-success {
-    color: #28a745 !important;
-}
-
-.text-danger {
-    color: #dc3545 !important;
+.theme-toggle:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
 }
 
 /* Custom animations */
@@ -112,15 +134,6 @@ body {
         padding: 0.5rem 1rem;
         font-size: 1rem;
     }
-}
-
-/* Data display styles */
-code {
-    background-color: #f8f9fa;
-    color: #e83e8c;
-    padding: 0.2rem 0.4rem;
-    border-radius: 0.25rem;
-    font-size: 0.875rem;
 }
 
 /* Loading states */
@@ -158,29 +171,21 @@ code {
     box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
 }
 
-/* Table styles */
-.table {
-    background-color: white;
-    border-radius: 0.5rem;
-    overflow: hidden;
+/* Financial specific styles */
+.text-success {
+    color: #28a745 !important;
 }
 
-.table th {
-    background-color: #f8f9fa;
-    border-top: none;
-    font-weight: 600;
-}
-
-/* Footer styles */
-footer {
-    margin-top: auto;
+.text-danger {
+    color: #dc3545 !important;
 }
 
 /* Print styles */
 @media print {
     .navbar,
     .btn,
-    .card-header {
+    .card-header,
+    .theme-toggle {
         display: none !important;
     }
     

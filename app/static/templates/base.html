@@ -6,6 +6,7 @@
     <title>{% block title %}Life Tracker{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Custom CSS must come after Bootstrap to override it -->
     <link href="{{ url_for('static', path='/css/style.css') }}" rel="stylesheet">
 </head>
 <body>
@@ -43,7 +44,7 @@
         {% block content %}{% endblock %}
     </main>
 
-    <footer class="bg-light mt-5 py-4">
+    <footer class="mt-5 py-4">
         <div class="container text-center">
             <p class="text-muted mb-0">
                 <i class="fas fa-heart text-danger"></i> Life Tracker - Track everything that matters
@@ -51,9 +52,100 @@
         </div>
     </footer>
 
+    <!-- Theme toggle button -->
+    <button class="theme-toggle" id="themeToggle" title="Toggle theme">
+        <i class="fas fa-moon" id="themeIcon"></i>
+    </button>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="{{ url_for('static', path='/js/app.js') }}"></script>
+    
+    <!-- Theme management script -->
+    <script>
+        // Theme management
+        let currentTheme = localStorage.getItem('theme') || 'light';
+        
+        // Initialize theme
+        function initializeTheme() {
+            // Load theme from server if available
+            fetch('/finance/api/settings/theme')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.theme) {
+                        currentTheme = data.theme;
+                        localStorage.setItem('theme', currentTheme);
+                    }
+                    applyTheme(currentTheme);
+                })
+                .catch(() => {
+                    // Fallback to localStorage
+                    applyTheme(currentTheme);
+                });
+        }
+        
+        // Apply theme to document
+        function applyTheme(theme) {
+            console.log('Applying theme:', theme);
+            // Set Bootstrap's theme attribute on html element
+            document.documentElement.setAttribute('data-bs-theme', theme);
+            // Also set on body for better compatibility
+            document.body.setAttribute('data-bs-theme', theme);
+            // Also set our custom theme attribute for compatibility
+            document.documentElement.setAttribute('data-theme', theme);
+            document.body.setAttribute('data-theme', theme);
+            updateThemeIcon(theme);
+            console.log('Theme applied, data-bs-theme attribute:', document.documentElement.getAttribute('data-bs-theme'));
+            console.log('Body data-bs-theme attribute:', document.body.getAttribute('data-bs-theme'));
+        }
+        
+        // Update theme icon
+        function updateThemeIcon(theme) {
+            const icon = document.getElementById('themeIcon');
+            if (icon) {
+                icon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+            }
+        }
+        
+        // Toggle theme
+        function toggleTheme() {
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            currentTheme = newTheme;
+            
+            console.log('Switching to theme:', newTheme);
+            
+            // Update UI immediately
+            applyTheme(newTheme);
+            localStorage.setItem('theme', newTheme);
+            
+            // Save to server
+            fetch('/finance/api/settings/theme', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    theme: newTheme
+                })
+            }).then(response => {
+                console.log('Theme saved to server:', response.ok);
+            }).catch(error => {
+                console.error('Error saving theme preference:', error);
+            });
+        }
+        
+        // Initialize theme on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeTheme();
+            
+            // Add click handler to theme toggle
+            const themeToggle = document.getElementById('themeToggle');
+            if (themeToggle) {
+                themeToggle.addEventListener('click', toggleTheme);
+            }
+        });
+    </script>
+    
     {% block scripts %}{% endblock %}
 </body>
 </html> 

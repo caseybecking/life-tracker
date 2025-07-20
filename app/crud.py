@@ -1044,4 +1044,56 @@ def setup_finance_categories(db: Session) -> Dict[str, Any]:
         "total_groups": len(categories_created),
         "total_subcategories": sum(len(subcats) for subcats in categories_created.values()),
         "categories": categories_created
-    } 
+    }
+
+# Settings operations
+def get_setting(db: Session, key: str) -> Optional[str]:
+    """Get a setting value by key"""
+    setting = db.query(models.Settings).filter(models.Settings.key == key).first()
+    return setting.value if setting else None
+
+def set_setting(db: Session, key: str, value: str, description: str = None) -> models.Settings:
+    """Set a setting value"""
+    setting = db.query(models.Settings).filter(models.Settings.key == key).first()
+    
+    if setting:
+        # Update existing setting
+        setting.value = value
+        if description:
+            setting.description = description
+        db.commit()
+        db.refresh(setting)
+    else:
+        # Create new setting
+        setting = models.Settings(
+            key=key,
+            value=value,
+            description=description
+        )
+        db.add(setting)
+        db.commit()
+        db.refresh(setting)
+    
+    return setting
+
+def get_all_settings(db: Session) -> Dict[str, str]:
+    """Get all settings as a dictionary"""
+    settings = db.query(models.Settings).all()
+    return {setting.key: setting.value for setting in settings}
+
+def delete_setting(db: Session, key: str) -> bool:
+    """Delete a setting"""
+    setting = db.query(models.Settings).filter(models.Settings.key == key).first()
+    if setting:
+        db.delete(setting)
+        db.commit()
+        return True
+    return False
+
+def get_theme_setting(db: Session) -> str:
+    """Get the current theme setting, defaulting to 'light'"""
+    return get_setting(db, "theme") or "light"
+
+def set_theme_setting(db: Session, theme: str) -> models.Settings:
+    """Set the theme setting"""
+    return set_setting(db, "theme", theme, "User interface theme preference") 
