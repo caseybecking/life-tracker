@@ -493,4 +493,201 @@ def get_clear_data_status(db: Session = Depends(get_db)):
         }
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error checking data status: {str(e)}") 
+        raise HTTPException(status_code=500, detail=f"Error checking data status: {str(e)}")
+
+# Settings endpoints
+@router.get("/api/settings/categories")
+def get_categories_settings(db: Session = Depends(get_db)):
+    """Get detailed categories information for settings"""
+    try:
+        categories = crud.get_finance_categories(db)
+        
+        # Get usage statistics for each category
+        from .. import models
+        banking_noun = db.query(models.Noun).filter(models.Noun.name == "Banking").first()
+        
+        category_stats = {}
+        if banking_noun:
+            # Get all transactions to count category usage
+            all_transactions = crud.get_transactions(db, limit=10000)
+            for transaction in all_transactions:
+                category = transaction['category']
+                if category not in category_stats:
+                    category_stats[category] = {
+                        'count': 0,
+                        'total_amount': 0
+                    }
+                category_stats[category]['count'] += 1
+                category_stats[category]['total_amount'] += abs(transaction['amount'])
+        
+        # Add usage stats to categories
+        for group in categories:
+            # Convert subcategories from strings to objects with usage stats
+            subcategories_with_stats = []
+            for subcategory_name in group['subcategories']:
+                subcategory_obj = {
+                    'name': subcategory_name,
+                    'usage_count': category_stats.get(subcategory_name, {}).get('count', 0),
+                    'usage_amount': category_stats.get(subcategory_name, {}).get('total_amount', 0)
+                }
+                subcategories_with_stats.append(subcategory_obj)
+            group['subcategories'] = subcategories_with_stats
+        
+        return {
+            "categories": categories,
+            "total_groups": len(categories),
+            "total_subcategories": sum(len(group['subcategories']) for group in categories)
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error loading categories: {str(e)}")
+
+@router.post("/api/settings/categories/add")
+def add_category(
+    category_group: str = Form(...),
+    subcategory: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    """Add a new subcategory to an existing category group"""
+    try:
+        from .. import models
+        
+        # Get or create the Finance_Categories noun
+        categories_noun = db.query(models.Noun).filter(models.Noun.name == "Finance_Categories").first()
+        if not categories_noun:
+            categories_noun = crud.create_noun(db, crud.schemas.NounCreate(
+                name="Finance_Categories",
+                description="Finance categories for tracking expenses and income"
+            ))
+        
+        # Get or create the category group attribute
+        category_attr = crud.get_attribute_by_name_and_noun(db, categories_noun.id, category_group)
+        if not category_attr:
+            category_attr = crud.create_attribute(db, crud.schemas.AttributeCreate(
+                noun_id=categories_noun.id,
+                name=category_group,
+                description=f"Category group for {category_group}"
+            ))
+        
+        # Check if subcategory already exists
+        existing_value = crud.get_value_by_name_and_attribute(db, category_attr.id, subcategory)
+        if existing_value:
+            raise HTTPException(status_code=400, detail=f"Subcategory '{subcategory}' already exists in '{category_group}'")
+        
+        # Create the new subcategory
+        new_value = crud.create_value(db, crud.schemas.ValueCreate(
+            attribute_id=category_attr.id,
+            name=subcategory,
+            data_type="string",
+            description=f"Subcategory: {subcategory}"
+        ))
+        
+        return {
+            "message": f"Added subcategory '{subcategory}' to '{category_group}'",
+            "category_group": category_group,
+            "subcategory": subcategory,
+            "id": new_value.id
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error adding category: {str(e)}")
+
+@router.delete("/api/settings/categories/{category_group}/{subcategory}")
+def delete_subcategory(
+    category_group: str,
+    subcategory: str,
+    db: Session = Depends(get_db)
+):
+    """Delete a subcategory (only if it's not being used)"""
+    try:
+        from .. import models
+        
+        # Get the Finance_Categories noun
+        categories_noun = db.query(models.Noun).filter(models.Noun.name == "Finance_Categories").first()
+        if not categories_noun:
+            raise HTTPException(status_code=404, detail="Finance categories not found")
+        
+        # Get the category group attribute
+        category_attr = crud.get_attribute_by_name_and_noun(db, categories_noun.id, category_group)
+        if not category_attr:
+            raise HTTPException(status_code=404, detail=f"Category group '{category_group}' not found")
+        
+        # Get the subcategory value
+        subcategory_value = crud.get_value_by_name_and_attribute(db, category_attr.id, subcategory)
+        if not subcategory_value:
+            raise HTTPException(status_code=404, detail=f"Subcategory '{subcategory}' not found")
+        
+        # Check if this subcategory is being used in transactions
+        all_transactions = crud.get_transactions(db, limit=10000)
+        used_transactions = [t for t in all_transactions if t['category'] == subcategory]
+        
+        if used_transactions:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Cannot delete subcategory '{subcategory}' - it's being used in {len(used_transactions)} transactions"
+            )
+        
+        # Delete the subcategory value
+        db.delete(subcategory_value)
+        db.commit()
+        
+        return {
+            "message": f"Deleted subcategory '{subcategory}' from '{category_group}'",
+            "category_group": category_group,
+            "subcategory": subcategory
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error deleting subcategory: {str(e)}")
+
+@router.post("/api/settings/categories/reset")
+def reset_categories(db: Session = Depends(get_db)):
+    """Reset all categories to default (only if no transactions exist)"""
+    try:
+        from .. import models
+        
+        # Check if there are any transactions
+        all_transactions = crud.get_transactions(db, limit=1)
+        if all_transactions:
+            raise HTTPException(
+                status_code=400, 
+                detail="Cannot reset categories - transactions exist. Clear all data first."
+            )
+        
+        # Clear existing categories
+        finance_categories_noun = db.query(models.Noun).filter(models.Noun.name == "Finance_Categories").first()
+        if finance_categories_noun:
+            # Delete all values in finance categories
+            db.query(models.Value).filter(
+                models.Value.attribute_id.in_(
+                    db.query(models.Attribute.id).filter(
+                        models.Attribute.noun_id == finance_categories_noun.id
+                    )
+                )
+            ).delete()
+            
+            # Delete all attributes in finance categories
+            db.query(models.Attribute).filter(
+                models.Attribute.noun_id == finance_categories_noun.id
+            ).delete()
+            
+            # Delete the finance categories noun itself
+            db.delete(finance_categories_noun)
+        
+        # Setup default categories
+        categories_result = crud.setup_finance_categories(db)
+        
+        return {
+            "message": "Categories reset to default",
+            "total_groups": categories_result['total_groups'],
+            "total_subcategories": categories_result['total_subcategories']
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error resetting categories: {str(e)}") 

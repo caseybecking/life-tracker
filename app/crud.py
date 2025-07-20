@@ -185,7 +185,6 @@ def track_data(
     data_entry = models.Data(
         value_id=value.id,
         data_value=str(data_value),
-        data_type=data_type,
         date_recorded=datetime.utcnow(),
         notes=notes
     )

@@ -49,6 +49,11 @@ async def account_details_page(request: Request):
     """Account details page"""
     return templates.TemplateResponse("account_details.html", {"request": request})
 
+@app.get("/finance/settings", response_class=HTMLResponse)
+async def finance_settings_page(request: Request):
+    """Finance settings page"""
+    return templates.TemplateResponse("finance_settings.html", {"request": request})
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""

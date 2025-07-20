@@ -294,5 +294,35 @@ def setup_example_data():
     finally:
         db.close()
 
+@cli.command("setup-categories")
+def setup_categories():
+    """Set up finance categories only (no accounts or transactions)"""
+    
+    print("=" * 60)
+    print("SETUP FINANCE CATEGORIES")
+    print("=" * 60)
+    print()
+    
+    # Get database session
+    db = next(get_db())
+    
+    try:
+        from app import crud
+        
+        print("Setting up finance categories...")
+        
+        # Setup categories only
+        categories_result = crud.setup_finance_categories(db)
+        print(f"✅ Created {categories_result['total_groups']} category groups")
+        print(f"✅ Created {categories_result['total_subcategories']} subcategories")
+        print()
+        print("Categories setup complete!")
+        print("You can now add accounts and transactions with proper categorization.")
+        
+    except Exception as e:
+        print(f"Error setting up categories: {str(e)}")
+    finally:
+        db.close()
+
 if __name__ == "__main__":
     cli() 

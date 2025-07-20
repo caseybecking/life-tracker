@@ -1,0 +1,501 @@
+{% extends "base.html" %}
+
+{% block title %}Finance Settings - Life Tracker{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0"><i class="fas fa-cog me-2"></i>Finance Settings</h1>
+            <p class="text-muted">Manage your finance categories and preferences</p>
+        </div>
+        <div class="btn-group" role="group">
+            <a href="/finance/overview" class="btn btn-outline-primary">
+                <i class="fas fa-chart-line me-1"></i>Overview
+            </a>
+            <a href="/finance/accounts" class="btn btn-outline-primary">
+                <i class="fas fa-university me-1"></i>Accounts
+            </a>
+            <a href="/finance/transactions" class="btn btn-outline-primary">
+                <i class="fas fa-exchange-alt me-1"></i>Transactions
+            </a>
+            <a href="/finance/budget" class="btn btn-outline-primary">
+                <i class="fas fa-chart-pie me-1"></i>Budget
+            </a>
+        </div>
+    </div>
+
+    <!-- Settings Navigation -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <ul class="nav nav-tabs card-header-tabs" id="settingsTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="categories-tab" data-bs-toggle="tab" data-bs-target="#categories" type="button" role="tab">
+                                <i class="fas fa-tags me-1"></i>Categories
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="data-tab" data-bs-toggle="tab" data-bs-target="#data" type="button" role="tab">
+                                <i class="fas fa-database me-1"></i>Data Management
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+                <div class="card-body">
+                    <div class="tab-content" id="settingsTabContent">
+                        <!-- Categories Tab -->
+                        <div class="tab-pane fade show active" id="categories" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <h5><i class="fas fa-tags me-2"></i>Finance Categories</h5>
+                                    <p class="text-muted">Manage your spending categories and subcategories.</p>
+                                    
+                                    <div id="categoriesList">
+                                        <div class="text-center py-4">
+                                            <i class="fas fa-spinner fa-spin fa-2x text-muted"></i>
+                                            <p class="text-muted mt-2">Loading categories...</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h6 class="mb-0"><i class="fas fa-plus me-2"></i>Add Category</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <form id="addCategoryForm">
+                                                <div class="mb-3">
+                                                    <label for="categoryGroup" class="form-label">Category Group</label>
+                                                    <select class="form-control" id="categoryGroup" required>
+                                                        <option value="">Select Group</option>
+                                                        <option value="Auto & Transport">Auto & Transport</option>
+                                                        <option value="Bills & Utilities">Bills & Utilities</option>
+                                                        <option value="Business Services">Business Services</option>
+                                                        <option value="Education">Education</option>
+                                                        <option value="Entertainment">Entertainment</option>
+                                                        <option value="Fees & Charges">Fees & Charges</option>
+                                                        <option value="Financial">Financial</option>
+                                                        <option value="Food & Dining">Food & Dining</option>
+                                                        <option value="Gifts & Donations">Gifts & Donations</option>
+                                                        <option value="Health & Fitness">Health & Fitness</option>
+                                                        <option value="Home">Home</option>
+                                                        <option value="Kids">Kids</option>
+                                                        <option value="Personal Care">Personal Care</option>
+                                                        <option value="Pets">Pets</option>
+                                                        <option value="Shopping">Shopping</option>
+                                                        <option value="Taxes">Taxes</option>
+                                                        <option value="Transfer">Transfer</option>
+                                                        <option value="Travel">Travel</option>
+                                                        <option value="Uncategorized">Uncategorized</option>
+                                                    </select>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label for="subcategory" class="form-label">Subcategory</label>
+                                                    <input type="text" class="form-control" id="subcategory" placeholder="Enter subcategory name" required>
+                                                </div>
+                                                <button type="submit" class="btn btn-primary">
+                                                    <i class="fas fa-plus me-1"></i>Add Subcategory
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="card mt-3">
+                                        <div class="card-header">
+                                            <h6 class="mb-0"><i class="fas fa-undo me-2"></i>Reset Categories</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <p class="text-muted small">Reset all categories to default values. This will only work if no transactions exist.</p>
+                                            <button class="btn btn-outline-warning" onclick="resetCategories()">
+                                                <i class="fas fa-undo me-1"></i>Reset to Default
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Data Management Tab -->
+                        <div class="tab-pane fade" id="data" role="tabpanel">
+                            <h5><i class="fas fa-database me-2"></i>Data Management</h5>
+                            <p class="text-muted">Manage your finance data and settings.</p>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h6 class="mb-0"><i class="fas fa-trash me-2"></i>Clear All Data</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <p class="text-muted">This will permanently delete all financial data including accounts, transactions, and categories.</p>
+                                            <button class="btn btn-danger" onclick="showClearDataModal()">
+                                                <i class="fas fa-trash me-1"></i>Clear All Data
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h6 class="mb-0"><i class="fas fa-download me-2"></i>Export Data</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <p class="text-muted">Export your finance data (coming soon).</p>
+                                            <button class="btn btn-outline-primary" disabled>
+                                                <i class="fas fa-download me-1"></i>Export Data
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Clear Data Modal -->
+<div class="modal fade" id="clearDataModal" tabindex="-1" aria-labelledby="clearDataModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title text-danger" id="clearDataModalLabel">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Clear All Finance Data
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <h6><i class="fas fa-exclamation-triangle me-1"></i>Warning</h6>
+                    <p class="mb-0">This action will permanently delete ALL financial data including:</p>
+                    <ul class="mb-0 mt-2">
+                        <li>All accounts and balances</li>
+                        <li>All transactions</li>
+                        <li>All financial categories</li>
+                        <li>All balance history</li>
+                    </ul>
+                </div>
+                <div id="dataStatusInfo">
+                    <p class="text-muted">Loading data status...</p>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="confirmClearData" required>
+                    <label class="form-check-label" for="confirmClearData">
+                        I understand this action cannot be undone
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="clearDataBtn" onclick="clearAllData()" disabled>
+                    <i class="fas fa-trash me-1"></i>Clear All Data
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadCategories();
+    
+    // Add category form submission
+    const addCategoryForm = document.getElementById('addCategoryForm');
+    if (addCategoryForm) {
+        addCategoryForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            addCategory();
+        });
+    }
+    
+    // Clear data modal event listeners
+    const confirmCheckbox = document.getElementById('confirmClearData');
+    if (confirmCheckbox) {
+        confirmCheckbox.addEventListener('change', updateClearButtonState);
+    }
+});
+
+async function loadCategories() {
+    try {
+        const response = await fetch('/finance/api/settings/categories');
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        const categoriesList = document.getElementById('categoriesList');
+        
+        if (!data.categories || data.categories.length === 0) {
+            categoriesList.innerHTML = `
+                <div class="text-center py-4">
+                    <i class="fas fa-tags fa-2x text-muted mb-3"></i>
+                    <h5 class="text-muted">No Categories Found</h5>
+                    <p class="text-muted">Set up categories to get started.</p>
+                    <button class="btn btn-primary" onclick="resetCategories()">
+                        <i class="fas fa-plus me-1"></i>Setup Default Categories
+                    </button>
+                </div>
+            `;
+            return;
+        }
+        
+        let html = '';
+        data.categories.forEach(group => {
+            html += `
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h6 class="mb-0 fw-bold">${group.category_group}</h6>
+                    </div>
+                    <div class="card-body">
+            `;
+            
+            html += `<ul class="list-group list-group-flush">`;
+            group.subcategories.forEach(subcategory => {
+                const usageCount = subcategory.usage_count || 0;
+                const usageAmount = subcategory.usage_amount || 0;
+                const usageClass = usageCount > 0 ? 'text-success' : 'text-muted';
+                
+                html += `
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>${subcategory.name}</span>
+                        <div class="d-flex align-items-center">
+                            <small class="${usageClass} me-2">
+                                ${usageCount} uses
+                            </small>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteSubcategory('${group.category_group}', '${subcategory.name}')" ${usageCount > 0 ? 'disabled' : ''}>
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </li>
+                `;
+            });
+            html += `</ul>`;
+            
+            html += `
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        categoriesList.innerHTML = html;
+        
+    } catch (error) {
+        console.error('Error loading categories:', error);
+        document.getElementById('categoriesList').innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle me-1"></i>
+                Error loading categories: ${error.message}
+            </div>
+        `;
+    }
+}
+
+async function addCategory() {
+    const categoryGroup = document.getElementById('categoryGroup').value;
+    const subcategory = document.getElementById('subcategory').value.trim();
+    
+    if (!categoryGroup || !subcategory) {
+        showAlert('Please fill in all fields', 'warning');
+        return;
+    }
+    
+    try {
+        const formData = new FormData();
+        formData.append('category_group', categoryGroup);
+        formData.append('subcategory', subcategory);
+        
+        const response = await fetch('/finance/api/settings/categories/add', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            showAlert(result.message, 'success');
+            document.getElementById('addCategoryForm').reset();
+            loadCategories(); // Reload the list
+        } else {
+            const error = await response.json();
+            showAlert(error.detail, 'danger');
+        }
+    } catch (error) {
+        console.error('Error adding category:', error);
+        showAlert('Error adding category', 'danger');
+    }
+}
+
+async function deleteSubcategory(categoryGroup, subcategory) {
+    if (!confirm(`Are you sure you want to delete the subcategory "${subcategory}" from "${categoryGroup}"?`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/finance/api/settings/categories/${encodeURIComponent(categoryGroup)}/${encodeURIComponent(subcategory)}`, {
+            method: 'DELETE'
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            showAlert(result.message, 'success');
+            loadCategories(); // Reload the list
+        } else {
+            const error = await response.json();
+            showAlert(error.detail, 'danger');
+        }
+    } catch (error) {
+        console.error('Error deleting subcategory:', error);
+        showAlert('Error deleting subcategory', 'danger');
+    }
+}
+
+async function resetCategories() {
+    if (!confirm('Are you sure you want to reset all categories to default? This will only work if no transactions exist.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/finance/api/settings/categories/reset', {
+            method: 'POST'
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            showAlert(result.message, 'success');
+            loadCategories(); // Reload the list
+        } else {
+            const error = await response.json();
+            showAlert(error.detail, 'danger');
+        }
+    } catch (error) {
+        console.error('Error resetting categories:', error);
+        showAlert('Error resetting categories', 'danger');
+    }
+}
+
+// Clear data functions
+function showClearDataModal() {
+    const modal = new bootstrap.Modal(document.getElementById('clearDataModal'));
+    modal.show();
+    loadDataStatus();
+}
+
+async function loadDataStatus() {
+    try {
+        const response = await fetch('/finance/api/clear-data-status');
+        const status = await response.json();
+        
+        const statusInfo = document.getElementById('dataStatusInfo');
+        
+        if (status.has_finance_data) {
+            statusInfo.innerHTML = `
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-info-circle me-1"></i>Current Data</h6>
+                    <p class="mb-1">Found the following data to be cleared:</p>
+                    <ul class="mb-0">
+                        <li>${status.account_count} accounts</li>
+                        <li>${status.transaction_count} transactions</li>
+                        <li>Financial categories and settings</li>
+                    </ul>
+                </div>
+            `;
+        } else {
+            statusInfo.innerHTML = `
+                <div class="alert alert-success">
+                    <h6><i class="fas fa-check-circle me-1"></i>No Data Found</h6>
+                    <p class="mb-0">No finance data found in the database. Nothing to clear.</p>
+                </div>
+            `;
+        }
+        
+        // Enable/disable clear button based on data presence
+        const clearBtn = document.getElementById('clearDataBtn');
+        clearBtn.disabled = !status.has_finance_data;
+        
+    } catch (error) {
+        console.error('Error loading data status:', error);
+        document.getElementById('dataStatusInfo').innerHTML = `
+            <div class="alert alert-danger">
+                <h6><i class="fas fa-exclamation-triangle me-1"></i>Error</h6>
+                <p class="mb-0">Failed to load data status. Please try again.</p>
+            </div>
+        `;
+    }
+}
+
+function updateClearButtonState() {
+    const confirmCheckbox = document.getElementById('confirmClearData');
+    const clearBtn = document.getElementById('clearDataBtn');
+    clearBtn.disabled = !confirmCheckbox.checked;
+}
+
+async function clearAllData() {
+    const confirmCheckbox = document.getElementById('confirmClearData');
+    if (!confirmCheckbox.checked) {
+        showAlert('Please confirm that you understand this action cannot be undone', 'warning');
+        return;
+    }
+    
+    if (!confirm('Are you absolutely sure you want to delete ALL finance data? This action cannot be undone!')) {
+        return;
+    }
+    
+    try {
+        const clearBtn = document.getElementById('clearDataBtn');
+        clearBtn.disabled = true;
+        clearBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Clearing...';
+        
+        const response = await fetch('/finance/api/clear-all-data', {
+            method: 'POST'
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            showAlert(`Successfully cleared all finance data! Deleted ${result.deleted_data.transactions} transactions, ${result.deleted_data.financial_attributes} accounts, and all categories.`, 'success');
+            
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('clearDataModal'));
+            modal.hide();
+            
+            // Reload categories (will show empty state)
+            loadCategories();
+        } else {
+            throw new Error('Failed to clear data');
+        }
+    } catch (error) {
+        console.error('Error clearing data:', error);
+        showAlert('Error clearing finance data', 'danger');
+        
+        // Reset button
+        const clearBtn = document.getElementById('clearDataBtn');
+        clearBtn.disabled = false;
+        clearBtn.innerHTML = '<i class="fas fa-trash me-1"></i>Clear All Data';
+    }
+}
+
+function showAlert(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.querySelector('main').insertBefore(alertDiv, document.querySelector('main').firstChild);
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+</script>
+{% endblock %} 
