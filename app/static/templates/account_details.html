@@ -311,33 +311,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-async function loadAccountDetails() {
-    try {
-        const response = await fetch(`/finance/api/accounts/${encodeURIComponent(accountName)}/details`);
-        if (!response.ok) {
-            throw new Error('Failed to load account details');
-        }
-        
-        const data = await response.json();
-        
-        // Update summary cards
-        updateSummaryCards(data);
-        
-        // Update account summary
-        updateAccountSummary(data.summary, data.account);
-        
-        // Create balance chart
-        createBalanceChart(data.balance_history);
-        
-        // Update transactions table
-        updateTransactionsTable(data.transactions);
-        
-    } catch (error) {
-        console.error('Error loading account details:', error);
-        showAlert('Error loading account details', 'danger');
-    }
-}
-
 function updateSummaryCards(data) {
     document.getElementById('currentBalance').textContent = `$${data.account.balance.toFixed(2)}`;
     document.getElementById('totalIncome').textContent = `$${data.summary.total_income.toFixed(2)}`;
@@ -409,54 +382,75 @@ function createBalanceChart(balanceHistory) {
     });
 }
 
-function updateTransactionsTable(transactions) {
-    const tbody = document.getElementById('transactionsTable');
-    if (!tbody) return;
-    
-    if (transactions.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No transactions found</td></tr>';
-        return;
+// Function to parse and display transaction notes properly
+function formatTransactionNotes(notes, category) {
+    if (!notes || notes === '-') {
+        return '-';
     }
     
-    tbody.innerHTML = '';
-    transactions.forEach(transaction => {
-        const row = document.createElement('tr');
-        const amountClass = transaction.amount >= 0 ? 'text-success' : 'text-danger';
-        const amountSign = transaction.amount >= 0 ? '+' : '';
+    // If it's an opening balance transaction, try to parse JSON metadata
+    if (category === 'Opening Balance') {
+        try {
+            const metadata = JSON.parse(notes);
+            if (metadata.institution || metadata.account_type) {
+                return `${metadata.institution || ''} ${metadata.account_type || ''}`.trim() || 'Opening Balance';
+            }
+        } catch (e) {
+            // If it's not valid JSON, return as is
+            return notes;
+        }
+    }
+    
+    // For regular transactions, try to parse JSON metadata
+    try {
+        const metadata = JSON.parse(notes);
+        if (metadata.description) {
+            return metadata.description;
+        }
+        // If no description but has other metadata, show a summary
+        if (metadata.category || metadata.required_spending) {
+            let summary = '';
+            if (metadata.required_spending) {
+                summary += 'Required spending ';
+            }
+            if (metadata.category) {
+                summary += `(${metadata.category})`;
+            }
+            return summary.trim() || notes;
+        }
+    } catch (e) {
+        // If it's not valid JSON, return as is
+        return notes;
+    }
+    
+    return notes;
+}
+
+async function loadAccountDetails() {
+    try {
+        const response = await fetch(`/finance/api/accounts/${encodeURIComponent(accountName)}/details`);
+        if (!response.ok) {
+            throw new Error('Failed to load account details');
+        }
         
-        // Determine badge class based on category
-        const isOpeningBalance = transaction.category === 'Opening Balance';
-        const categoryBadge = isOpeningBalance ? 'bg-primary' : 'bg-secondary';
+        const data = await response.json();
         
-        // Add required spending indicator
-        const requiredIndicator = transaction.required_spending ? 
-            '<i class="fas fa-exclamation-triangle text-warning me-1" title="Required Spending"></i>' : '';
+        // Update summary cards
+        updateSummaryCards(data);
         
-        row.innerHTML = `
-            <td>${new Date(transaction.date).toLocaleDateString()}
-                ${transaction.updated_at && new Date(transaction.updated_at) > new Date(transaction.date) ?
-                ` <small class="text-muted" title="Last updated: ${new Date(transaction.updated_at).toLocaleString()}">✏️</small>` :
-                ''}
-            </td>
-            <td><span class="badge ${categoryBadge}">${transaction.category}</span></td>
-            <td>${requiredIndicator}${transaction.description || '-'}</td>
-            <td class="${amountClass} fw-bold">${amountSign}$${Math.abs(transaction.amount).toFixed(2)}</td>
-            <td>${transaction.notes || '-'}</td>
-            <td>
-                ${isOpeningBalance ? 
-                    `<button type="button" class="btn btn-outline-info btn-sm" title="Opening balance - use account balance update to modify">
-                        <i class="fas fa-info-circle"></i>
-                    </button>` : 
-                    `<div class="btn-group btn-group-sm" role="group">
-                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="editTransaction('${transaction.id}', '${transaction.account}', '${transaction.category}', ${transaction.amount}, '${(transaction.description || '').replace(/'/g, "\\'")}', '${(transaction.notes || '').replace(/'/g, "\\'")}', '${transaction.date}', ${transaction.required_spending})" title="Edit Transaction">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                    </div>`
-                }
-            </td>
-        `;
-        tbody.appendChild(row);
-    });
+        // Update account summary
+        updateAccountSummary(data.summary, data.account);
+        
+        // Create balance chart
+        createBalanceChart(data.balance_history);
+        
+        // Update transactions table
+        updateTransactionsTable(data.transactions);
+        
+    } catch (error) {
+        console.error('Error loading account details:', error);
+        showAlert('Error loading account details', 'danger');
+    }
 }
 
 async function refreshAccountData() {
@@ -647,6 +641,59 @@ async function deleteTransaction() {
 
 function showBalanceUpdateInfo() {
     showAlert('To update the opening balance, use the account balance update feature in the main Finance page or contact support.', 'info');
+}
+
+function updateTransactionsTable(transactions) {
+    const tbody = document.getElementById('transactionsTable');
+    if (!tbody) return;
+    
+    if (transactions.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No transactions found</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = '';
+    transactions.forEach(transaction => {
+        const row = document.createElement('tr');
+        const amountClass = transaction.amount >= 0 ? 'text-success' : 'text-danger';
+        const amountSign = transaction.amount >= 0 ? '+' : '';
+        
+        // Determine badge class based on category
+        const isOpeningBalance = transaction.category === 'Opening Balance';
+        const categoryBadge = isOpeningBalance ? 'bg-primary' : 'bg-secondary';
+        
+        // Add required spending indicator
+        const requiredIndicator = transaction.required_spending ? 
+            '<i class="fas fa-exclamation-triangle text-warning me-1" title="Required Spending"></i>' : '';
+        
+        // Format the notes properly
+        const formattedNotes = formatTransactionNotes(transaction.notes, transaction.category);
+        
+        row.innerHTML = `
+            <td>${new Date(transaction.date).toLocaleDateString()}
+                ${transaction.updated_at && new Date(transaction.updated_at) > new Date(transaction.date) ?
+                ` <small class="text-muted" title="Last updated: ${new Date(transaction.updated_at).toLocaleString()}">✏️</small>` :
+                ''}
+            </td>
+            <td><span class="badge ${categoryBadge}">${transaction.category}</span></td>
+            <td>${requiredIndicator}${transaction.description || '-'}</td>
+            <td class="${amountClass} fw-bold">${amountSign}$${Math.abs(transaction.amount).toFixed(2)}</td>
+            <td>${formattedNotes}</td>
+            <td>
+                ${isOpeningBalance ? 
+                    `<button type="button" class="btn btn-outline-info btn-sm" title="Opening balance - use account balance update to modify">
+                        <i class="fas fa-info-circle"></i>
+                    </button>` : 
+                    `<div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="editTransaction('${transaction.id}', '${transaction.account}', '${transaction.category}', ${transaction.amount}, '${(transaction.description || '').replace(/'/g, "\\'")}', '${(transaction.notes || '').replace(/'/g, "\\'")}', '${transaction.date}', ${transaction.required_spending})" title="Edit Transaction">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    </div>`
+                }
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
 }
 </script>
 {% endblock %} 
