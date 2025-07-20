@@ -323,4 +323,174 @@ def setup_example_data(db: Session = Depends(get_db)):
             "accounts_added": len(example_accounts)
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error setting up example data: {str(e)}") 
+        raise HTTPException(status_code=500, detail=f"Error setting up example data: {str(e)}")
+
+@router.post("/api/clear-all-data")
+def clear_all_finance_data(db: Session = Depends(get_db)):
+    """Clear all finance data from the database"""
+    try:
+        from .. import models
+        
+        # 1. Clear all financial transactions
+        transaction_count = db.query(models.Data).filter(
+            models.Data.value_id.in_(
+                db.query(models.Value.id).filter(
+                    models.Value.attribute_id.in_(
+                        db.query(models.Attribute.id).filter(
+                            models.Attribute.noun_id == db.query(models.Noun.id).filter(
+                                models.Noun.name == "Banking"
+                            ).scalar()
+                        )
+                    )
+                )
+            )
+        ).count()
+        
+        db.query(models.Data).filter(
+            models.Data.value_id.in_(
+                db.query(models.Value.id).filter(
+                    models.Value.attribute_id.in_(
+                        db.query(models.Attribute.id).filter(
+                            models.Attribute.noun_id == db.query(models.Noun.id).filter(
+                                models.Noun.name == "Banking"
+                            ).scalar()
+                        )
+                    )
+                )
+            )
+        ).delete()
+        
+        # 2. Clear all financial values (categories, balances, etc.)
+        value_count = db.query(models.Value).filter(
+            models.Value.attribute_id.in_(
+                db.query(models.Attribute.id).filter(
+                    models.Attribute.noun_id == db.query(models.Noun.id).filter(
+                        models.Noun.name == "Banking"
+                    ).scalar()
+                )
+            )
+        ).count()
+        
+        db.query(models.Value).filter(
+            models.Value.attribute_id.in_(
+                db.query(models.Attribute.id).filter(
+                    models.Attribute.noun_id == db.query(models.Noun.id).filter(
+                        models.Noun.name == "Banking"
+                    ).scalar()
+                )
+            )
+        ).delete()
+        
+        # 3. Clear all financial attributes (accounts, etc.)
+        attribute_count = db.query(models.Attribute).filter(
+            models.Attribute.noun_id == db.query(models.Noun.id).filter(
+                models.Noun.name == "Banking"
+            ).scalar()
+        ).count()
+        
+        db.query(models.Attribute).filter(
+            models.Attribute.noun_id == db.query(models.Noun.id).filter(
+                models.Noun.name == "Banking"
+            ).scalar()
+        ).delete()
+        
+        # 4. Clear finance categories
+        finance_categories_noun = db.query(models.Noun).filter(models.Noun.name == "Finance_Categories").first()
+        category_value_count = 0
+        category_attribute_count = 0
+        
+        if finance_categories_noun:
+            # Delete all values in finance categories
+            category_value_count = db.query(models.Value).filter(
+                models.Value.attribute_id.in_(
+                    db.query(models.Attribute.id).filter(
+                        models.Attribute.noun_id == finance_categories_noun.id
+                    )
+                )
+            ).count()
+            
+            db.query(models.Value).filter(
+                models.Value.attribute_id.in_(
+                    db.query(models.Attribute.id).filter(
+                        models.Attribute.noun_id == finance_categories_noun.id
+                    )
+                )
+            ).delete()
+            
+            # Delete all attributes in finance categories
+            category_attribute_count = db.query(models.Attribute).filter(
+                models.Attribute.noun_id == finance_categories_noun.id
+            ).count()
+            
+            db.query(models.Attribute).filter(
+                models.Attribute.noun_id == finance_categories_noun.id
+            ).delete()
+            
+            # Delete the finance categories noun itself
+            db.delete(finance_categories_noun)
+        
+        # 5. Clear the Banking noun (this will remove all remaining financial data)
+        banking_noun = db.query(models.Noun).filter(models.Noun.name == "Banking").first()
+        if banking_noun:
+            db.delete(banking_noun)
+        
+        # Commit all changes
+        db.commit()
+        
+        return {
+            "message": "All finance data cleared successfully",
+            "deleted_data": {
+                "transactions": transaction_count,
+                "financial_values": value_count,
+                "financial_attributes": attribute_count,
+                "category_values": category_value_count,
+                "category_attributes": category_attribute_count,
+                "nouns_deleted": 2 if finance_categories_noun else 1
+            }
+        }
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error clearing finance data: {str(e)}")
+
+@router.get("/api/clear-data-status")
+def get_clear_data_status(db: Session = Depends(get_db)):
+    """Check if there's any finance data in the database"""
+    try:
+        from .. import models
+        
+        # Check for financial data
+        banking_noun = db.query(models.Noun).filter(models.Noun.name == "Banking").first()
+        finance_categories_noun = db.query(models.Noun).filter(models.Noun.name == "Finance_Categories").first()
+        
+        # Count remaining data
+        transaction_count = 0
+        account_count = 0
+        
+        if banking_noun:
+            transaction_count = db.query(models.Data).filter(
+                models.Data.value_id.in_(
+                    db.query(models.Value.id).filter(
+                        models.Value.attribute_id.in_(
+                            db.query(models.Attribute.id).filter(
+                                models.Attribute.noun_id == banking_noun.id
+                            )
+                        )
+                    )
+                )
+            ).count()
+            
+            account_count = db.query(models.Attribute).filter(
+                models.Attribute.noun_id == banking_noun.id
+            ).count()
+        
+        return {
+            "has_finance_data": banking_noun is not None or finance_categories_noun is not None,
+            "banking_noun_exists": banking_noun is not None,
+            "finance_categories_exists": finance_categories_noun is not None,
+            "transaction_count": transaction_count,
+            "account_count": account_count
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error checking data status: {str(e)}") 

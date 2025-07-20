@@ -1,11 +1,13 @@
 from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse
+from sqlalchemy.orm import Session
 import os
+
 from .database import engine
-from . import models
 from .routers import finance, general
+from . import models
 
 # Create database tables
 models.Base.metadata.create_all(bind=engine)
@@ -16,16 +18,17 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Include routers
-app.include_router(finance.router, prefix="/finance", tags=["finance"])
-app.include_router(general.router, prefix="/api", tags=["api"])
-
 # Mount static files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 # Templates
 templates = Jinja2Templates(directory="app/static/templates")
 
+# Include routers
+app.include_router(finance.router, prefix="/finance", tags=["finance"])
+app.include_router(general.router, prefix="/api", tags=["api"])
+
+# Main page
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
     """Main landing page"""
